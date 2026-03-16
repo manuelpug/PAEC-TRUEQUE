@@ -1,0 +1,1476 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InventaEdu — Sistema de Inventario Escolar</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0f14;--surface:#151820;--surface2:#1c2030;--surface3:#232840;--border:#252a3a;--border2:#2e3550;--accent:#f5c842;--accent2:#3de8a0;--accent3:#e84f7c;--accent4:#7c6aff;--text:#e8ecf5;--text2:#8892aa;--text3:#4a5168;--radius:12px;--shadow:0 8px 32px rgba(0,0,0,.5);}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+.bg-glow{position:fixed;pointer-events:none;z-index:0;border-radius:50%;}
+.bg-glow-1{top:-300px;left:-300px;width:700px;height:700px;background:radial-gradient(circle,rgba(245,200,66,.07) 0%,transparent 70%);}
+.bg-glow-2{bottom:-300px;right:-300px;width:700px;height:700px;background:radial-gradient(circle,rgba(61,232,160,.05) 0%,transparent 70%);}
+.bg-glow-3{top:40%;left:40%;width:400px;height:400px;background:radial-gradient(circle,rgba(124,106,255,.04) 0%,transparent 70%);}
+/* VIEWS */
+.view{display:none;min-height:100vh;}
+.view.active{display:flex;flex-direction:column;}
+/* LANDING */
+#view-landing{align-items:center;justify-content:center;padding:40px 20px;text-align:center;position:relative;}
+.landing-logo{font-family:'Space Mono',monospace;font-size:12px;color:var(--text3);letter-spacing:3px;text-transform:uppercase;margin-bottom:28px;}
+.landing-title{font-size:clamp(40px,7vw,76px);font-weight:700;line-height:1.05;margin-bottom:14px;}
+.landing-title em{font-style:normal;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.landing-sub{font-size:17px;color:var(--text2);max-width:460px;margin:0 auto 44px;}
+.landing-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;}
+.landing-note{margin-top:28px;font-size:13px;color:var(--text3);}
+.landing-note span{color:var(--accent);cursor:pointer;text-decoration:underline;}
+/* REGISTER */
+#view-register{align-items:center;justify-content:flex-start;padding:40px 20px;}
+.reg-container{width:min(680px,100%);margin:0 auto;}
+.reg-back{display:inline-flex;align-items:center;gap:8px;color:var(--text2);font-size:14px;cursor:pointer;margin-bottom:28px;transition:color .2s;}
+.reg-back:hover{color:var(--accent);}
+.reg-step-bar{display:flex;gap:0;margin-bottom:28px;border-radius:8px;overflow:hidden;border:1px solid var(--border);}
+.reg-step{flex:1;padding:10px;text-align:center;font-size:12px;font-weight:600;color:var(--text3);background:var(--surface);transition:all .3s;position:relative;}
+.reg-step.active{background:var(--accent);color:#000;}
+.reg-step.done{background:rgba(61,232,160,.15);color:var(--accent2);}
+.reg-step:not(:last-child)::after{content:'';position:absolute;right:-1px;top:0;bottom:0;width:1px;background:var(--border);}
+/* APP */
+#view-app{flex-direction:column;}
+header{position:sticky;top:0;z-index:100;background:rgba(13,15,20,.96);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 28px;display:flex;align-items:center;justify-content:space-between;height:62px;gap:14px;}
+.logo{font-family:'Space Mono',monospace;font-size:15px;color:var(--accent);letter-spacing:-1px;display:flex;align-items:center;gap:8px;white-space:nowrap;}
+.logo small{color:var(--text3);font-size:10px;font-family:'DM Sans',sans-serif;font-weight:400;}
+nav{display:flex;gap:3px;flex-wrap:wrap;}
+nav button{background:transparent;border:none;color:var(--text2);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;padding:7px 13px;border-radius:8px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:5px;white-space:nowrap;}
+nav button:hover{background:var(--surface2);color:var(--text);}
+nav button.active{background:var(--accent);color:#000;font-weight:700;}
+.header-user .uname{font-size:13px;font-weight:600;}
+.header-user .urole{font-size:11px;color:var(--text3);}
+main{max-width:1400px;margin:0 auto;padding:28px;flex:1;position:relative;z-index:1;}
+/* SECTIONS */
+.section{display:none;animation:fadeIn .3s ease;}
+.section.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+/* PAGE HEADER */
+.page-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;flex-wrap:wrap;gap:14px;}
+.page-title{font-size:24px;font-weight:700;line-height:1.2;}
+.page-title em{font-style:normal;color:var(--accent);}
+.page-subtitle{color:var(--text2);font-size:13px;margin-top:3px;}
+/* CARDS */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:24px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;transition:border-color .2s,transform .2s;}
+.stat-card:hover{border-color:var(--accent);transform:translateY(-2px);}
+.stat-card .label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:7px;}
+.stat-card .value{font-size:30px;font-weight:700;font-family:'Space Mono',monospace;color:var(--accent);}
+.stat-card .sub{font-size:11px;color:var(--text3);margin-top:3px;}
+/* FORMS */
+.form-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:18px;}
+.form-section-title{font-size:14px;font-weight:600;color:var(--text);padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:18px;display:flex;align-items:center;gap:8px;}
+.form-section-title::before{content:'';display:block;width:3px;height:15px;background:var(--accent);border-radius:2px;}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:13px;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-group.full{grid-column:1/-1;}
+label{font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+input,select,textarea{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 13px;transition:border-color .2s,box-shadow .2s;outline:none;width:100%;}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(245,200,66,.1);}
+select option{background:var(--surface2);}
+textarea{resize:vertical;min-height:70px;}
+.input-hint{font-size:11px;color:var(--text3);margin-top:2px;}
+/* PROD BUILDER */
+.prod-builder{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-top:6px;}
+.prod-builder-header{background:var(--surface2);padding:11px 15px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);}
+.prod-builder-header span{font-size:13px;font-weight:600;}
+.prod-item{display:flex;align-items:center;gap:10px;padding:11px 15px;border-bottom:1px solid var(--border);animation:fadeIn .2s ease;}
+.prod-item:last-child{border-bottom:none;}
+.prod-item .pname{flex:1;font-size:13px;font-weight:600;}
+.prod-item .pcat{font-size:11px;color:var(--text2);}
+.prod-item .ppts{font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--accent2);white-space:nowrap;}
+.prod-empty{padding:20px;text-align:center;color:var(--text3);font-size:13px;}
+.add-prod-row{display:grid;grid-template-columns:1fr 1fr auto;gap:9px;padding:11px 15px;background:var(--surface3);border-top:1px solid var(--border);align-items:end;}
+/* BUTTONS */
+.btn{font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;padding:10px 18px;border-radius:8px;border:none;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;}
+.btn-primary{background:var(--accent);color:#000;}
+.btn-primary:hover{background:#ffd84a;transform:translateY(-1px);box-shadow:0 4px 16px rgba(245,200,66,.3);}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
+.btn-danger{background:rgba(232,79,124,.12);color:var(--accent3);border:1px solid rgba(232,79,124,.25);}
+.btn-danger:hover{background:rgba(232,79,124,.22);}
+.btn-success{background:rgba(61,232,160,.12);color:var(--accent2);border:1px solid rgba(61,232,160,.25);}
+.btn-success:hover{background:rgba(61,232,160,.22);}
+.btn-purple{background:rgba(124,106,255,.12);color:var(--accent4);border:1px solid rgba(124,106,255,.25);}
+.btn-purple:hover{background:rgba(124,106,255,.22);}
+.btn-sm{padding:6px 11px;font-size:12px;}
+.btn-xs{padding:4px 8px;font-size:11px;}
+.btn-lg{padding:13px 26px;font-size:16px;}
+.btn-full{width:100%;justify-content:center;}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important;}
+/* TABLE */
+.table-wrapper{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.table-header{padding:13px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);}
+.table-header .title{font-size:13px;font-weight:600;}
+table{width:100%;border-collapse:collapse;}
+thead tr{background:var(--surface2);}
+th{padding:10px 13px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text2);font-weight:600;white-space:nowrap;}
+td{padding:12px 13px;font-size:13px;border-top:1px solid var(--border);vertical-align:middle;}
+tr:hover td{background:rgba(255,255,255,.02);}
+.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+.badge-cat{background:rgba(245,200,66,.12);color:var(--accent);border:1px solid rgba(245,200,66,.2);}
+.badge-pts{background:rgba(61,232,160,.12);color:var(--accent2);border:1px solid rgba(61,232,160,.2);font-family:'Space Mono',monospace;}
+.badge-grp{background:rgba(124,106,255,.12);color:var(--accent4);border:1px solid rgba(124,106,255,.2);}
+.badge-canje{background:rgba(232,79,124,.12);color:var(--accent3);border:1px solid rgba(232,79,124,.2);}
+/* SEARCH */
+.search-bar{display:flex;gap:9px;align-items:center;margin-bottom:18px;flex-wrap:wrap;}
+.siwrap{position:relative;flex:1;min-width:180px;}
+.siwrap .sicon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px;pointer-events:none;}
+.siwrap input{padding-left:38px;}
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:16px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:26px;width:min(580px,100%);max-height:90vh;overflow-y:auto;animation:modalIn .25s ease;position:relative;}
+.modal-wide{width:min(780px,100%);}
+@keyframes modalIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+.modal-close{position:absolute;top:13px;right:13px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+.modal-close:hover{background:var(--accent3);color:#fff;border-color:transparent;}
+.modal-title{font-size:18px;font-weight:700;margin-bottom:18px;}
+/* SHOP */
+.shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;}
+.shop-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;display:flex;flex-direction:column;gap:8px;transition:all .2s;position:relative;overflow:hidden;}
+.shop-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));opacity:0;transition:opacity .2s;}
+.shop-card:hover{border-color:var(--accent2);transform:translateY(-3px);box-shadow:0 10px 28px rgba(0,0,0,.3);}
+.shop-card:hover::before{opacity:1;}
+.shop-card.cannot-afford{opacity:.5;}
+.shop-card.cannot-afford:hover{transform:none;border-color:var(--border);}
+.sc-icon{font-size:26px;}
+.sc-name{font-weight:700;font-size:14px;}
+.sc-cat{font-size:11px;color:var(--text2);}
+.sc-desc{font-size:12px;color:var(--text3);flex:1;}
+.sc-cost{display:flex;align-items:center;justify-content:space-between;margin-top:6px;padding-top:8px;border-top:1px solid var(--border);}
+.sc-price{font-family:'Space Mono',monospace;font-size:17px;font-weight:700;color:var(--accent);}
+.sc-price span{font-size:10px;color:var(--text3);font-family:'DM Sans',sans-serif;}
+/* CANJE ITEM */
+.canje-item{display:flex;align-items:center;gap:12px;padding:13px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;transition:border-color .2s;}
+.canje-item:hover{border-color:var(--accent3);}
+/* ALUMNO HERO */
+.alumno-hero{display:flex;gap:14px;align-items:center;padding:16px;background:var(--surface2);border-radius:12px;margin-bottom:18px;border:1px solid var(--border);flex-wrap:wrap;}
+.avatar{width:48px;height:48px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#000;flex-shrink:0;font-family:'Space Mono',monospace;}
+.avatar.sm{width:34px;height:34px;font-size:12px;}
+.aname{font-size:16px;font-weight:700;}
+.ameta{font-size:12px;color:var(--text2);margin-top:3px;display:flex;gap:9px;flex-wrap:wrap;}
+/* BALANCE BAR */
+.balance-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;display:flex;gap:18px;margin-bottom:20px;flex-wrap:wrap;align-items:center;}
+.bal-item{display:flex;flex-direction:column;gap:3px;}
+.bl{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;}
+.bv{font-family:'Space Mono',monospace;font-size:22px;font-weight:700;}
+.bv.earned{color:var(--accent2);}
+.bv.spent{color:var(--accent3);}
+.bv.avail{color:var(--accent);}
+.bal-divider{width:1px;background:var(--border);align-self:stretch;}
+/* RANKING */
+.rank-item{display:flex;align-items:center;gap:12px;padding:13px;border-radius:12px;background:var(--surface);border:1px solid var(--border);margin-bottom:9px;transition:all .2s;cursor:pointer;}
+.rank-item:hover{border-color:var(--accent);transform:translateX(4px);}
+.rank-num{font-family:'Space Mono',monospace;font-size:17px;font-weight:700;color:var(--text3);width:26px;text-align:center;flex-shrink:0;}
+.rank-num.gold{color:var(--accent);}
+.rank-num.silver{color:#b8c0d0;}
+.rank-num.bronze{color:#cd7c3e;}
+.rank-info{flex:1;}
+.rank-name{font-weight:600;font-size:14px;}
+.rank-meta{font-size:11px;color:var(--text2);margin-top:2px;}
+.rank-pts{font-family:'Space Mono',monospace;font-size:19px;font-weight:700;color:var(--accent2);text-align:right;}
+.rank-pts span{display:block;font-size:10px;color:var(--text3);font-family:'DM Sans',sans-serif;}
+/* TABS */
+.tabs{display:flex;gap:4px;margin-bottom:20px;flex-wrap:wrap;}
+.tab{padding:7px 14px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-family:'DM Sans',sans-serif;transition:all .2s;}
+.tab.active{background:var(--accent);color:#000;font-weight:700;border-color:transparent;}
+/* EMPTY */
+.empty{text-align:center;padding:50px 28px;color:var(--text3);}
+.empty .emoji{font-size:40px;margin-bottom:9px;}
+.empty p{font-size:13px;}
+/* TOAST */
+#toast{position:fixed;bottom:24px;right:24px;z-index:300;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 17px;font-size:13px;color:var(--text);box-shadow:var(--shadow);display:flex;align-items:center;gap:9px;transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);max-width:300px;}
+#toast.show{transform:translateY(0);opacity:1;}
+#toast.success .ticon{color:var(--accent2);}
+#toast.error .ticon{color:var(--accent3);}
+#toast.info .ticon{color:var(--accent4);}
+.divider{border:none;border-top:1px solid var(--border);margin:18px 0;}
+/* CONFIRM */
+.confirm-box{background:var(--surface);border:2px solid var(--accent3);border-radius:16px;padding:28px;width:min(380px,90vw);text-align:center;animation:modalIn .25s ease;}
+.confirm-box .ci{font-size:38px;margin-bottom:11px;}
+.confirm-box h3{font-size:17px;font-weight:700;margin-bottom:7px;}
+.confirm-box p{font-size:13px;color:var(--text2);margin-bottom:22px;line-height:1.6;}
+.cb-actions{display:flex;gap:9px;justify-content:center;}
+/* LOGIN SUGGESTION */
+.login-sug{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;transition:border-color .2s;}
+.login-sug:hover{border-color:var(--accent2);}
+@media(max-width:768px){
+  header{padding:0 14px;height:56px;}
+  nav{display:none;}
+  main{padding:14px;}
+  .page-header{flex-direction:column;}
+  .cards-grid{grid-template-columns:1fr 1fr;}
+  .add-prod-row{grid-template-columns:1fr 1fr;}
+  .balance-bar{gap:10px;}
+}
+</style>
+</head>
+<body>
+<div class="bg-glow bg-glow-1"></div>
+<div class="bg-glow bg-glow-2"></div>
+<div class="bg-glow bg-glow-3"></div>
+
+<!-- ═══════════════ LANDING ═══════════════ -->
+<div class="view active" id="view-landing">
+  <div class="landing-logo">InventaEdu · Sistema Escolar</div>
+  <h1 class="landing-title">Inventario<br><em>Escolar</em></h1>
+  <p class="landing-sub">Registra productos, acumula puntos y canjéalos por artículos del catálogo.</p>
+  <div class="landing-actions">
+    <button class="btn btn-primary btn-lg" onclick="showView('view-register')">📝 Registro / Ingreso de Alumno</button>
+    <button class="btn btn-secondary btn-lg" onclick="adminLogin()">🔐 Panel Administrativo</button>
+  </div>
+  <div class="landing-note">¿Ya tienes cuenta? <span onclick="showView('view-register')">Ingresa aquí</span></div>
+</div>
+
+<!-- ═══════════════ REGISTER VIEW ═══════════════ -->
+<div class="view" id="view-register">
+  <div class="reg-container" style="padding-top:16px;">
+    <div class="reg-back" onclick="showView('view-landing')">← Volver al inicio</div>
+    <div style="margin-bottom:22px;">
+      <div class="page-title">Registro de <em>Alumno</em></div>
+      <div class="page-subtitle">Ingresa tus datos y agrega tus productos</div>
+    </div>
+    <div class="reg-step-bar">
+      <div class="reg-step active" id="step-1-tab">1 · Mis Datos</div>
+      <div class="reg-step" id="step-2-tab">2 · Mis Productos</div>
+      <div class="reg-step" id="step-3-tab">3 · ¡Listo!</div>
+    </div>
+
+    <!-- PASO 1 -->
+    <div id="reg-step-1">
+      <div class="form-card">
+        <div class="form-section-title">Datos del Alumno</div>
+        <div class="form-grid">
+          <div class="form-group full">
+            <label>Nombre Completo *</label>
+            <input type="text" id="rg-nombre" placeholder="Ej: Juan García López" autocomplete="name">
+            <span class="input-hint">Escríbelo igual que en la lista de clase</span>
+          </div>
+          <div class="form-group">
+            <label>Especialidad *</label>
+            <input type="text" id="rg-especialidad" placeholder="Ej: Informática">
+          </div>
+          <div class="form-group">
+            <label>Grupo *</label>
+            <input type="text" id="rg-grupo" placeholder="Ej: 3A">
+          </div>
+        </div>
+        <hr class="divider">
+        <div class="form-section-title">¿Ya tienes cuenta? Búscate aquí</div>
+        <div style="display:flex;gap:9px;flex-wrap:wrap">
+          <div class="siwrap" style="flex:1">
+            <span class="sicon">🔍</span>
+            <input type="text" id="login-buscar" placeholder="Escribe tu nombre o grupo…" oninput="renderLoginSugg()">
+          </div>
+        </div>
+        <div id="login-sugg" style="margin-top:10px"></div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="regStep1()">Siguiente: Agregar Productos →</button>
+    </div>
+
+    <!-- PASO 2 -->
+    <div id="reg-step-2" style="display:none">
+      <div class="form-card">
+        <div class="form-section-title">Agrega tus Productos</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Escribe el nombre de cada producto que traes y selecciona su categoría. Los puntos se asignan según el rango de cada categoría.</p>
+        <div class="prod-builder">
+          <div class="prod-builder-header">
+            <span>📦 Productos a registrar</span>
+            <span id="rg-cnt" style="font-size:12px;color:var(--text2)">0 producto(s)</span>
+          </div>
+          <div id="rg-prod-list"></div>
+          <div style="padding:13px 15px;background:var(--surface3);border-top:1px solid var(--border)">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:9px">
+              <div class="form-group" style="margin:0">
+                <label>Nombre del Producto *</label>
+                <input type="text" id="rg-nuevo-nombre" placeholder="Ej: Laptop Lenovo, Taladro…">
+              </div>
+              <div class="form-group" style="margin:0">
+                <label>Categoría *</label>
+                <select id="rg-cat" onchange="rgActualizarRango()">
+                  <option value="">— Selecciona —</option>
+                </select>
+              </div>
+            </div>
+            <div id="rg-rango-info" style="font-size:12px;color:var(--accent2);padding:7px 10px;background:rgba(61,232,160,.07);border-radius:7px;border:1px solid rgba(61,232,160,.2);margin-bottom:9px;display:none"></div>
+            <div class="form-group" style="margin-bottom:9px" id="rg-pts-group">
+              <label>Puntos a otorgar *</label>
+              <input type="number" id="rg-nuevo-puntos" min="0" placeholder="Ej: 100" oninput="rgValidarPuntos()" style="font-size:18px;font-family:'Space Mono';font-weight:700;text-align:center;">
+              <span class="input-hint" id="rg-pts-hint" style="font-size:12px">Selecciona una categoría para ver el rango permitido</span>
+            </div>
+            <button class="btn btn-success btn-full" onclick="rgAddProd()">＋ Agregar Producto</button>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:9px;flex-wrap:wrap">
+        <button class="btn btn-secondary" onclick="regGoStep(1)">← Atrás</button>
+        <button class="btn btn-primary" style="flex:1" onclick="regSubmit()">✅ Completar Registro</button>
+      </div>
+    </div>
+
+    <!-- PASO 3 -->
+    <div id="reg-step-3" style="display:none">
+      <div class="form-card" style="text-align:center;padding:44px 24px">
+        <div style="font-size:64px;margin-bottom:10px;animation:fadeIn .4s ease">🎉</div>
+        <div style="display:inline-block;background:rgba(61,232,160,.15);border:1px solid rgba(61,232,160,.4);border-radius:30px;padding:6px 18px;font-size:13px;font-weight:700;color:var(--accent2);margin-bottom:14px;letter-spacing:.5px">✓ ALUMNO REGISTRADO</div>
+        <h2 style="font-size:24px;font-weight:700;margin-bottom:8px">¡Registro Exitoso!</h2>
+        <p style="color:var(--text2);margin-bottom:6px;font-size:15px" id="rg-done-msg">Tu cuenta fue creada.</p>
+        <p style="color:var(--text3);font-size:13px;margin-bottom:28px">Ahora puedes ver tu perfil y canjear puntos por productos.</p>
+        <div style="display:flex;gap:11px;justify-content:center;flex-wrap:wrap">
+          <button class="btn btn-primary btn-lg" onclick="irPerfil()">Ver mi Perfil →</button>
+          <button class="btn btn-secondary" onclick="showView('view-landing')">Inicio</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ APP VIEW ═══════════════ -->
+<div class="view" id="view-app">
+  <header>
+    <div class="logo">InventaEdu <small>/ Sistema</small></div>
+    <nav id="app-nav"></nav>
+    <div class="header-user" style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+      <div id="hdr-user"></div>
+      <button class="btn btn-secondary btn-sm" onclick="cerrarSesion()">Salir</button>
+    </div>
+  </header>
+  <main>
+
+    <!-- DASHBOARD (admin) -->
+    <section class="section" id="sec-dashboard">
+      <div class="page-header"><div><div class="page-title">Panel <em>Principal</em></div><div class="page-subtitle">Resumen del sistema</div></div></div>
+      <div class="cards-grid" id="stat-cards"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="table-wrapper"><div class="table-header"><span class="title">⭐ Top Alumnos</span></div><div id="top-alumnos"></div></div>
+        <div class="table-wrapper"><div class="table-header"><span class="title">🛍 Últimos Canjes</span></div><div id="ultimas-asign"></div></div>
+      </div>
+    </section>
+
+    <!-- MI PERFIL (alumno) -->
+    <section class="section" id="sec-perfil">
+      <div class="page-header">
+        <div><div class="page-title">Mi <em>Perfil</em></div><div class="page-subtitle">Tus datos, productos y puntos</div></div>
+        <button class="btn btn-success" onclick="openAsignarSelf()">＋ Agregar Producto</button>
+      </div>
+      <div id="perfil-content"></div>
+    </section>
+
+    <!-- TIENDA DE CANJE -->
+    <section class="section" id="sec-tienda">
+      <div class="page-header"><div><div class="page-title">Tienda de <em>Canje</em></div><div class="page-subtitle">Productos registrados por los alumnos — canjea tus puntos por ellos</div></div></div>
+      <div id="tienda-balance"></div>
+      <div style="background:rgba(61,232,160,.07);border:1px solid rgba(61,232,160,.2);border-radius:10px;padding:10px 15px;margin-bottom:14px;font-size:12px;color:var(--accent2);display:flex;align-items:center;gap:8px;"><span style="font-size:16px">ℹ️</span><span>Los productos disponibles son los que los alumnos han registrado. El costo de canje refleja los puntos reales asignados a cada uno.</span></div>
+      <div class="search-bar">
+        <div class="siwrap" style="flex:1"><span class="sicon">🔍</span><input type="text" id="tienda-search" placeholder="Buscar producto…" oninput="renderTienda()"></div>
+        <select id="tienda-cat" onchange="renderTienda()" style="width:180px"><option value="">Todas las categorías</option></select>
+      </div>
+      <div id="tienda-grid"></div>
+      <hr class="divider">
+      <div style="font-size:17px;font-weight:700;margin-bottom:14px">Historial de <em style="font-style:normal;color:var(--accent)">Canjes</em></div>
+      <div id="historial-canjes"></div>
+    </section>
+
+    <!-- ALUMNOS (admin) -->
+    <section class="section" id="sec-alumnos">
+      <div class="page-header">
+        <div><div class="page-title">Gestión de <em>Alumnos</em></div><div class="page-subtitle">Registra y administra alumnos</div></div>
+        <button class="btn btn-primary" onclick="openModalAlumno()">＋ Nuevo Alumno</button>
+      </div>
+      <div class="search-bar">
+        <div class="siwrap" style="flex:1"><span class="sicon">🔍</span><input type="text" id="search-alumno" placeholder="Buscar nombre, especialidad, grupo…" oninput="renderAlumnos()"></div>
+        <select id="filter-grupo" onchange="renderAlumnos()" style="width:140px"><option value="">Todos los grupos</option></select>
+        <select id="filter-esp" onchange="renderAlumnos()" style="width:180px"><option value="">Todas las especialidades</option></select>
+      </div>
+      <div class="table-wrapper">
+        <table><thead><tr><th>Alumno</th><th>Especialidad</th><th>Grupo</th><th>Productos</th><th>Pts Ganados</th><th>Pts Gastados</th><th>Disponibles</th><th>Acciones</th></tr></thead>
+        <tbody id="tabla-alumnos"></tbody></table>
+        <div id="empty-alumnos" class="empty" style="display:none"><div class="emoji">👨‍🎓</div><p>No hay alumnos</p></div>
+      </div>
+    </section>
+
+    <!-- CATEGORÍAS -->
+    <section class="section" id="sec-categorias">
+      <div class="page-header">
+        <div><div class="page-title">Gestión de <em>Categorías</em></div><div class="page-subtitle">Organiza los productos</div></div>
+        <button class="btn btn-primary" onclick="openModalCategoria()">＋ Nueva Categoría</button>
+      </div>
+      <div class="cards-grid" id="cats-grid"></div>
+      <div class="table-wrapper">
+        <table><thead><tr><th>Nombre</th><th>Descripción</th><th>Rango de Pts</th><th>Productos</th><th>Acciones</th></tr></thead>
+        <tbody id="tabla-categorias"></tbody></table>
+        <div id="empty-cats" class="empty" style="display:none"><div class="emoji">📁</div><p>No hay categorías</p></div>
+      </div>
+    </section>
+
+    <!-- PRODUCTOS -->
+    <section class="section" id="sec-productos">
+      <div class="page-header">
+        <div><div class="page-title">Gestión de <em>Productos</em></div><div class="page-subtitle">Catálogo con puntuación y costo de canje</div></div>
+        <button class="btn btn-primary" onclick="openModalProducto()">＋ Nuevo Producto</button>
+      </div>
+      <div class="search-bar">
+        <div class="siwrap" style="flex:1"><span class="sicon">🔍</span><input type="text" id="search-prod" placeholder="Buscar producto…" oninput="renderProductos()"></div>
+        <select id="filter-cat" onchange="renderProductos()" style="width:180px"><option value="">Todas las categorías</option></select>
+      </div>
+      <div class="table-wrapper">
+        <table><thead><tr><th>Producto</th><th>Categoría</th><th>Pts que Otorga</th><th>Costo Canje</th><th>Tienda</th><th>Descripción</th><th>Acciones</th></tr></thead>
+        <tbody id="tabla-productos"></tbody></table>
+        <div id="empty-prods" class="empty" style="display:none"><div class="emoji">📦</div><p>No hay productos</p></div>
+      </div>
+    </section>
+
+    <!-- CANJES (admin) -->
+    <section class="section" id="sec-canjes">
+      <div class="page-header"><div><div class="page-title">Historial de <em>Canjes</em></div><div class="page-subtitle">Todos los canjes del sistema</div></div></div>
+      <div class="search-bar">
+        <div class="siwrap" style="flex:1"><span class="sicon">🔍</span><input type="text" id="search-canjes" placeholder="Buscar alumno o producto…" oninput="renderCanjesAdmin()"></div>
+      </div>
+      <div class="table-wrapper">
+        <table><thead><tr><th>Alumno</th><th>Producto Canjeado</th><th>Pts Gastados</th><th>Fecha</th><th>Acciones</th></tr></thead>
+        <tbody id="tabla-canjes"></tbody></table>
+        <div id="empty-canjes" class="empty" style="display:none"><div class="emoji">🛍</div><p>Sin canjes</p></div>
+      </div>
+    </section>
+
+    <!-- RANKING -->
+    <section class="section" id="sec-ranking">
+      <div class="page-header"><div><div class="page-title">Tabla de <em>Ranking</em></div><div class="page-subtitle">Clasificación de alumnos</div></div></div>
+      <div class="tabs">
+        <button class="tab active" onclick="setRankTab('ganados',this)">⭐ Puntos Ganados</button>
+        <button class="tab" onclick="setRankTab('disponibles',this)">💰 Pts Disponibles</button>
+        <button class="tab" onclick="setRankTab('canjes',this)">🛍 Canjes Realizados</button>
+      </div>
+      <div id="ranking-list"></div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ══ MODALES ══ -->
+<div class="modal-overlay" id="modal-alumno">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-alumno')">×</button>
+    <div class="modal-title" id="modal-alumno-title">➕ Nuevo Alumno</div>
+    <input type="hidden" id="edit-alumno-id">
+    <div class="form-grid">
+      <div class="form-group full"><label>Nombre Completo *</label><input type="text" id="a-nombre" placeholder="Juan García López"></div>
+      <div class="form-group"><label>Especialidad *</label><input type="text" id="a-especialidad" placeholder="Informática"></div>
+      <div class="form-group"><label>Grupo *</label><input type="text" id="a-grupo" placeholder="3A"></div>
+    </div>
+    <div style="margin-top:18px;display:flex;gap:9px;justify-content:flex-end">
+      <button class="btn btn-secondary" onclick="closeModal('modal-alumno')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarAlumno()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-categoria">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-categoria')">×</button>
+    <div class="modal-title" id="modal-cat-title">📁 Nueva Categoría</div>
+    <input type="hidden" id="edit-cat-id">
+    <div class="form-grid">
+      <div class="form-group full"><label>Nombre *</label><input type="text" id="c-nombre" placeholder="Electrónica"></div>
+      <div class="form-group full"><label>Descripción</label><textarea id="c-desc" placeholder="Descripción…"></textarea></div>
+      <div class="form-group"><label>Ícono (emoji)</label><input type="text" id="c-icono" placeholder="📦" maxlength="2"></div>
+      <div class="form-group"><label>Color</label><select id="c-color"><option value="accent">Dorado</option><option value="accent2">Verde</option><option value="accent3">Rosa</option><option value="accent4">Púrpura</option></select></div>
+      <div class="form-group"><label>Puntos Mínimos</label><input type="number" id="c-ptsmin" min="0" placeholder="10"><span class="input-hint">Mín de pts al registrar un producto de esta categoría</span></div>
+      <div class="form-group"><label>Puntos Máximos</label><input type="number" id="c-ptsmax" min="0" placeholder="200"><span class="input-hint">Máx de pts al registrar un producto de esta categoría</span></div>
+    </div>
+    <div style="margin-top:18px;display:flex;gap:9px;justify-content:flex-end">
+      <button class="btn btn-secondary" onclick="closeModal('modal-categoria')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarCategoria()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-producto">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-producto')">×</button>
+    <div class="modal-title" id="modal-prod-title">📦 Nuevo Producto</div>
+    <input type="hidden" id="edit-prod-id">
+    <div class="form-grid">
+      <div class="form-group full"><label>Nombre *</label><input type="text" id="p-nombre" placeholder="Laptop HP"></div>
+      <div class="form-group"><label>Categoría *</label><select id="p-categoria"></select></div>
+      <div class="form-group"><label>Puntos que otorga</label><input type="number" id="p-puntos" min="0" placeholder="100"><span class="input-hint">Pts que gana el alumno al registrarlo</span></div>
+      <div class="form-group"><label>Costo de Canje</label><input type="number" id="p-costo" min="0" placeholder="80"><span class="input-hint">Pts necesarios para canjearlo</span></div>
+      <div class="form-group full"><label>Descripción</label><textarea id="p-desc" placeholder="Descripción del producto…"></textarea></div>
+      <div class="form-group full"><label>Disponible en Tienda de Canje</label><select id="p-canjeable"><option value="1">✅ Sí, disponible</option><option value="0">❌ No, solo registrable</option></select></div>
+    </div>
+    <div style="margin-top:18px;display:flex;gap:9px;justify-content:flex-end">
+      <button class="btn btn-secondary" onclick="closeModal('modal-producto')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarProducto()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-detalle">
+  <div class="modal modal-wide">
+    <button class="modal-close" onclick="closeModal('modal-detalle')">×</button>
+    <div id="detalle-content"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-asignar">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-asignar')">×</button>
+    <div class="modal-title">📦 Agregar Producto</div>
+    <input type="hidden" id="asignar-alumno-id">
+    <div class="form-grid">
+      <div class="form-group full"><label>Filtrar por Categoría</label><select id="asig-cat" onchange="refreshAsigProdSel()"><option value="">— Todas —</option></select></div>
+      <div class="form-group full"><label>Producto *</label><select id="asignar-producto"></select></div>
+    </div>
+    <div style="margin-top:18px;display:flex;gap:9px;justify-content:flex-end">
+      <button class="btn btn-secondary" onclick="closeModal('modal-asignar')">Cancelar</button>
+      <button class="btn btn-primary" onclick="asignarProducto()">Agregar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-puntos">
+  <div class="modal" style="width:min(360px,90vw)">
+    <button class="modal-close" onclick="closeModal('modal-puntos')">×</button>
+    <div class="modal-title">✏️ Editar Puntos del Producto</div>
+    <input type="hidden" id="edit-asign-id">
+    <div class="form-group" style="margin-bottom:18px">
+      <label>Nuevo valor de puntos</label>
+      <input type="number" id="new-puntos" min="0" max="9999" style="font-size:22px;font-family:'Space Mono';text-align:center;font-weight:700">
+    </div>
+    <div style="display:flex;gap:9px;justify-content:flex-end">
+      <button class="btn btn-secondary" onclick="closeModal('modal-puntos')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarPuntos()">Guardar Puntos</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-canje-confirm">
+  <div class="confirm-box">
+    <div class="ci">🛍</div>
+    <h3 id="cc-title">Confirmar Canje</h3>
+    <p id="cc-msg"></p>
+    <div class="cb-actions">
+      <button class="btn btn-secondary" onclick="closeModal('modal-canje-confirm')">Cancelar</button>
+      <button class="btn btn-primary" id="cc-btn">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"><span class="ticon">✓</span><span id="toast-msg"></span></div>
+
+<script>
+// ══════════════════════════════════════════
+// DB  (localStorage = base de datos)
+// ══════════════════════════════════════════
+const DB={
+  get(k){try{return JSON.parse(localStorage.getItem('IEdu_'+k))||[];}catch{return [];}},
+  set(k,v){localStorage.setItem('IEdu_'+k,JSON.stringify(v));},
+  nextId(k){const it=this.get(k);return it.length?Math.max(...it.map(i=>i.id))+1:1;}
+};
+const ADMIN_PASS='admin123';
+let session=null;
+let rankTab='ganados';
+let rgProds=[]; // productos pendientes en formulario de registro
+
+// ══════════════════════════════════════════
+// SEED
+// ══════════════════════════════════════════
+function seed(){
+  if(DB.get('categorias').length)return;
+  DB.set('categorias',[
+    {id:1,nombre:'Electrónica',desc:'Dispositivos electrónicos',icono:'💻',color:'accent2',ptsMin:80,ptsMax:200},
+    {id:2,nombre:'Herramientas',desc:'Herramientas manuales',icono:'🔧',color:'accent',ptsMin:30,ptsMax:100},
+    {id:3,nombre:'Oficina',desc:'Papelería y consumibles',icono:'📝',color:'accent4',ptsMin:10,ptsMax:50},
+  ]);
+  DB.set('productos',[]);
+  DB.set('alumnos',[
+    {id:1,nombre:'Ana Martínez López',especialidad:'Informática',grupo:'3A'},
+    {id:2,nombre:'Carlos Rivera Soto',especialidad:'Electrónica',grupo:'2B'},
+    {id:3,nombre:'Sofía Torres Ruiz',especialidad:'Mecánica',grupo:'3A'},
+  ]);
+  DB.set('asignaciones',[]);
+  DB.set('canjes',[]);
+}
+
+// ══════════════════════════════════════════
+// VIEWS
+// ══════════════════════════════════════════
+function showView(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+  if(id==='view-register')initReg();
+}
+function showSection(id){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('#app-nav button').forEach(b=>b.classList.toggle('active',b.dataset.sec===id));
+  if(id==='sec-dashboard')renderDashboard();
+  else if(id==='sec-perfil')renderPerfil();
+  else if(id==='sec-tienda'){renderTiendaBalance();renderTienda();renderHistorialCanjes();}
+  else if(id==='sec-alumnos')renderAlumnos();
+  else if(id==='sec-categorias')renderCategorias();
+  else if(id==='sec-productos')renderProductos();
+  else if(id==='sec-canjes')renderCanjesAdmin();
+  else if(id==='sec-ranking')renderRanking();
+}
+
+// ══════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════
+function adminLogin(){
+  const p=prompt('Contraseña de administrador:');
+  if(p===null)return;
+  if(p===ADMIN_PASS){session={id:0,nombre:'Administrador',rol:'admin'};enterApp('sec-dashboard');}
+  else toast('error','Contraseña incorrecta');
+}
+function loginAlumno(id){
+  const a=DB.get('alumnos').find(x=>x.id===id);
+  if(!a)return;
+  session={id:a.id,nombre:a.nombre,rol:'alumno'};
+  enterApp('sec-perfil');
+}
+function enterApp(sec){
+  buildNav();
+  document.getElementById('hdr-user').innerHTML=`<div class="uname">${session.nombre}</div><div class="urole">${session.rol==='admin'?'Administrador':'Alumno'}</div>`;
+  showView('view-app');
+  showSection(sec||'sec-perfil');
+}
+function cerrarSesion(){session=null;showView('view-landing');}
+function buildNav(){
+  const nav=document.getElementById('app-nav');
+  nav.innerHTML=session.rol==='admin'
+    ?`<button data-sec="sec-dashboard" onclick="showSection('sec-dashboard')">📊 Dashboard</button>
+       <button data-sec="sec-alumnos" onclick="showSection('sec-alumnos')">👨‍🎓 Alumnos</button>
+       <button data-sec="sec-categorias" onclick="showSection('sec-categorias')">📁 Categorías</button>
+       <button data-sec="sec-productos" onclick="showSection('sec-productos')">📦 Productos</button>
+       <button data-sec="sec-canjes" onclick="showSection('sec-canjes')">🛍 Canjes</button>
+       <button data-sec="sec-ranking" onclick="showSection('sec-ranking')">🏆 Ranking</button>`
+    :`<button data-sec="sec-perfil" onclick="showSection('sec-perfil')">👤 Mi Perfil</button>
+       <button data-sec="sec-tienda" onclick="showSection('sec-tienda')">🛍 Tienda</button>
+       <button data-sec="sec-ranking" onclick="showSection('sec-ranking')">🏆 Ranking</button>`;
+}
+
+// ══════════════════════════════════════════
+// REGISTER FLOW
+// ══════════════════════════════════════════
+function initReg(){
+  rgProds=[];
+  regGoStep(1);
+  document.getElementById('rg-nombre').value='';
+  document.getElementById('rg-especialidad').value='';
+  document.getElementById('rg-grupo').value='';
+  document.getElementById('login-buscar').value='';
+  document.getElementById('login-sugg').innerHTML='';
+  refreshRgCatSel();
+  renderRgProdList();
+}
+function regGoStep(n){
+  [1,2,3].forEach(i=>{
+    document.getElementById('reg-step-'+i).style.display=i===n?'block':'none';
+    const t=document.getElementById('step-'+i+'-tab');
+    t.className='reg-step'+(i<n?' done':i===n?' active':'');
+  });
+}
+function renderLoginSugg(){
+  const q=document.getElementById('login-buscar').value.toLowerCase().trim();
+  const c=document.getElementById('login-sugg');
+  if(!q){c.innerHTML='';return;}
+  const al=DB.get('alumnos').filter(a=>a.nombre.toLowerCase().includes(q)||a.grupo.toLowerCase().includes(q)||a.especialidad.toLowerCase().includes(q));
+  c.innerHTML=al.length
+    ?al.map(a=>`<div class="login-sug">
+        <div class="avatar sm">${initials(a.nombre)}</div>
+        <div style="flex:1"><div style="font-weight:600;font-size:13px">${a.nombre}</div><div style="font-size:11px;color:var(--text2)">${a.especialidad} · Grupo ${a.grupo}</div></div>
+        <button class="btn btn-success btn-sm" onclick="loginAlumno(${a.id})">Ingresar →</button>
+      </div>`).join('')
+    :'<div style="font-size:13px;color:var(--text3);padding:8px">No se encontraron alumnos con ese nombre</div>';
+}
+function regStep1(){
+  const n=document.getElementById('rg-nombre').value.trim();
+  const e=document.getElementById('rg-especialidad').value.trim();
+  const g=document.getElementById('rg-grupo').value.trim();
+  if(!n||!e||!g){toast('error','Completa nombre, especialidad y grupo');return;}
+  refreshRgCatSel();
+  renderRgProdList();
+  regGoStep(2);
+}
+function refreshRgCatSel(){
+  const cats=DB.get('categorias');
+  const sel=document.getElementById('rg-cat');
+  if(!sel)return;
+  const v=sel.value;
+  sel.innerHTML='<option value="">— Selecciona categoría —</option>'+cats.map(c=>{
+    const rango=c.ptsMin||c.ptsMax?` (${c.ptsMin||0}–${c.ptsMax||'∞'} pts)`:'';
+    return `<option value="${c.id}">${c.icono||''} ${c.nombre}${rango}</option>`;
+  }).join('');
+  if(v)sel.value=v;
+  rgActualizarRango();
+}
+function rgActualizarRango(){
+  const catId=parseInt(document.getElementById('rg-cat')?.value)||0;
+  const info=document.getElementById('rg-rango-info');
+  const hint=document.getElementById('rg-pts-hint');
+  const ptsInput=document.getElementById('rg-nuevo-puntos');
+  if(!info)return;
+  if(!catId){
+    info.style.display='none';
+    if(hint)hint.textContent='Selecciona una categoría para ver el rango permitido';
+    if(ptsInput){ptsInput.min=0;ptsInput.max='';ptsInput.value='';}
+    return;
+  }
+  const cat=DB.get('categorias').find(c=>c.id===catId);
+  if(!cat){info.style.display='none';return;}
+  const min=cat.ptsMin||0,max=cat.ptsMax||0;
+  if(!min&&!max){
+    info.style.display='none';
+    if(hint)hint.textContent='Esta categoría no tiene rango definido. Ingresa los puntos libremente.';
+    if(ptsInput){ptsInput.min=0;ptsInput.max='';ptsInput.value='';}
+    return;
+  }
+  info.style.display='block';
+  info.innerHTML=`${cat.icono||'📦'} <strong>${cat.nombre}</strong> · Rango permitido: <strong style="font-family:'Space Mono'">${min} – ${max} pts</strong>`;
+  if(ptsInput){
+    ptsInput.min=min;
+    ptsInput.max=max;
+    ptsInput.value='';
+    ptsInput.style.borderColor='var(--border)';
+  }
+  if(hint)hint.innerHTML=`Ingresa entre <strong>${min}</strong> y <strong>${max}</strong> puntos`;
+}
+function rgValidarPuntos(){
+  const catId=parseInt(document.getElementById('rg-cat')?.value)||0;
+  const ptsInput=document.getElementById('rg-nuevo-puntos');
+  const hint=document.getElementById('rg-pts-hint');
+  if(!catId||!ptsInput)return;
+  const cat=DB.get('categorias').find(c=>c.id===catId);
+  const min=cat?.ptsMin||0,max=cat?.ptsMax||0;
+  if(!min&&!max)return;
+  const val=parseInt(ptsInput.value)||0;
+  if(val<min){
+    ptsInput.style.borderColor='var(--accent3)';
+    ptsInput.style.boxShadow='0 0 0 3px rgba(232,79,124,.15)';
+    if(hint)hint.innerHTML=`<span style="color:var(--accent3)">⚠ Mínimo ${min} pts para esta categoría</span>`;
+  } else if(max>0&&val>max){
+    ptsInput.style.borderColor='var(--accent3)';
+    ptsInput.style.boxShadow='0 0 0 3px rgba(232,79,124,.15)';
+    if(hint)hint.innerHTML=`<span style="color:var(--accent3)">⚠ Máximo ${max} pts para esta categoría</span>`;
+  } else if(val>0){
+    ptsInput.style.borderColor='var(--accent2)';
+    ptsInput.style.boxShadow='0 0 0 3px rgba(61,232,160,.15)';
+    if(hint)hint.innerHTML=`<span style="color:var(--accent2)">✓ ${val} pts — dentro del rango permitido</span>`;
+  } else {
+    ptsInput.style.borderColor='var(--border)';
+    ptsInput.style.boxShadow='none';
+    if(hint)hint.innerHTML=`Ingresa entre <strong>${min}</strong> y <strong>${max}</strong> puntos`;
+  }
+}
+function rgAddProd(){
+  const nombre=document.getElementById('rg-nuevo-nombre').value.trim();
+  const catId=parseInt(document.getElementById('rg-cat').value)||0;
+  const ptsInput=document.getElementById('rg-nuevo-puntos');
+  if(!nombre){toast('error','Escribe el nombre del producto');return;}
+  if(!catId){toast('error','Selecciona una categoría');return;}
+  const cat=DB.get('categorias').find(c=>c.id===catId);
+  const min=cat?.ptsMin||0,max=cat?.ptsMax||0;
+  let pts=parseInt(ptsInput?.value)||0;
+  // Validar rango si está definido
+  if(min||max){
+    if(!pts){toast('error','Ingresa los puntos del producto');return;}
+    if(pts<min){toast('error',`Mínimo ${min} pts para la categoría ${cat.nombre}`);return;}
+    if(max>0&&pts>max){toast('error',`Máximo ${max} pts para la categoría ${cat.nombre}`);return;}
+  }
+  rgProds.push({nombre,catId,puntos:pts});
+  renderRgProdList();
+  document.getElementById('rg-nuevo-nombre').value='';
+  if(ptsInput){ptsInput.value='';ptsInput.style.borderColor='var(--border)';ptsInput.style.boxShadow='none';}
+  toast('success','✅ ¡Producto agregado! +'+pts+' pts');
+}
+function rgRemoveProd(idx){
+  rgProds.splice(idx,1);
+  renderRgProdList();
+}
+function renderRgProdList(){
+  const list=document.getElementById('rg-prod-list');
+  const cnt=document.getElementById('rg-cnt');
+  if(!list)return;
+  cnt.textContent=rgProds.length+' producto(s)';
+  if(!rgProds.length){list.innerHTML='<div class="prod-empty">Aún no agregas productos</div>';return;}
+  const cats=DB.get('categorias');
+  list.innerHTML=rgProds.map((r,i)=>{
+    const c=cats.find(x=>x.id===r.catId);
+    return `<div class="prod-item">
+      <div style="flex:1"><div class="pname">${r.nombre}</div><div class="pcat">${c?.icono||''} ${c?.nombre||'?'}</div></div>
+      <div class="ppts">+${r.puntos} pts</div>
+      <button class="btn btn-danger btn-xs" onclick="rgRemoveProd(${i})">✕</button>
+    </div>`;}).join('');
+}
+// refreshRgProdSel ya no hace falta (selección por nombre libre), se mantiene vacía por compatibilidad
+function refreshRgProdSel(){}
+function regSubmit(){
+  const nombre=document.getElementById('rg-nombre').value.trim();
+  const esp=document.getElementById('rg-especialidad').value.trim();
+  const grupo=document.getElementById('rg-grupo').value.trim();
+  let alumnos=DB.get('alumnos');
+  let alumno=alumnos.find(a=>a.nombre.toLowerCase()===nombre.toLowerCase()&&a.grupo.toLowerCase()===grupo.toLowerCase());
+  let nuevo=false;
+  if(!alumno){alumno={id:DB.nextId('alumnos'),nombre,especialidad:esp,grupo};alumnos.push(alumno);DB.set('alumnos',alumnos);nuevo=true;}
+  let productosAgregados=0;
+  if(rgProds.length){
+    const prods=DB.get('productos');
+    const asigns=DB.get('asignaciones');
+    rgProds.forEach(r=>{
+      // Crear el producto en el catálogo si no existe con ese nombre y categoría
+      let prod=prods.find(p=>p.nombre.toLowerCase()===r.nombre.toLowerCase()&&p.catId===r.catId);
+      if(!prod){
+        prod={id:DB.nextId('productos'),nombre:r.nombre,catId:r.catId,puntos:r.puntos,costo:Math.round(r.puntos*0.8),desc:'',canjeable:1};
+        prods.push(prod);
+      }
+      // Asignar al alumno si no lo tiene ya
+      if(!asigns.find(a=>a.alumnoId===alumno.id&&a.prodId===prod.id)){
+        asigns.push({id:DB.nextId('asignaciones'),alumnoId:alumno.id,prodId:prod.id,puntos:r.puntos,fecha:new Date().toISOString()});
+        productosAgregados++;
+      }
+    });
+    DB.set('productos',prods);
+    DB.set('asignaciones',asigns);
+  }
+  const totalPts=rgProds.reduce((s,r)=>s+r.puntos,0);
+  document.getElementById('rg-done-msg').textContent=nuevo
+    ?`¡Bienvenido/a ${nombre.split(' ')[0]}! Se registraron ${productosAgregados} producto(s) y ganaste ${totalPts} puntos.`
+    :`Hola de nuevo, ${nombre.split(' ')[0]}. Se agregaron ${productosAgregados} producto(s) nuevos.`;
+  session={id:alumno.id,nombre:alumno.nombre,rol:'alumno'};
+  regGoStep(3);
+}
+function irPerfil(){
+  buildNav();
+  document.getElementById('hdr-user').innerHTML=`<div class="uname">${session.nombre}</div><div class="urole">Alumno</div>`;
+  showView('view-app');
+  showSection('sec-perfil');
+}
+
+// ══════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════
+function renderDashboard(){
+  const al=DB.get('alumnos'),pr=DB.get('productos'),as=DB.get('asignaciones'),ca=DB.get('canjes');
+  const totalPts=as.reduce((s,a)=>s+a.puntos,0);
+  const totalCanje=ca.reduce((s,c)=>s+c.costo,0);
+  document.getElementById('stat-cards').innerHTML=`
+    <div class="stat-card"><div class="label">👨‍🎓 Alumnos</div><div class="value">${al.length}</div><div class="sub">registrados</div></div>
+    <div class="stat-card"><div class="label">📦 Productos</div><div class="value">${pr.length}</div><div class="sub">en catálogo</div></div>
+    <div class="stat-card"><div class="label">⭐ Pts Ganados</div><div class="value">${totalPts}</div><div class="sub">total sistema</div></div>
+    <div class="stat-card"><div class="label">🛍 Pts Canjeados</div><div class="value">${totalCanje}</div><div class="sub">${ca.length} canje(s)</div></div>`;
+  const rk=getRanking('ganados').slice(0,5);
+  document.getElementById('top-alumnos').innerHTML=rk.length
+    ?rk.map((r,i)=>`<div style="padding:10px 13px;border-top:1px solid var(--border);display:flex;align-items:center;gap:9px">
+        <div style="font-family:'Space Mono';font-weight:700;width:18px;color:var(--text3);font-size:11px">${i+1}</div>
+        <div style="flex:1"><div style="font-weight:600;font-size:12px">${r.al.nombre}</div><div style="font-size:11px;color:var(--text2)">${r.al.especialidad} · ${r.al.grupo}</div></div>
+        <div style="font-family:'Space Mono';font-weight:700;color:var(--accent2);font-size:12px">${r.ganados} pts</div>
+      </div>`).join('')
+    :'<div class="empty"><div class="emoji">🏆</div><p>Sin datos</p></div>';
+  const ult=[...ca].sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).slice(0,5);
+  document.getElementById('ultimas-asign').innerHTML=ult.length
+    ?ult.map(c=>{const a2=al.find(x=>x.id===c.alumnoId),p2=pr.find(x=>x.id===c.prodId);
+      return `<div style="padding:10px 13px;border-top:1px solid var(--border);display:flex;align-items:center;gap:9px">
+        <div style="flex:1"><div style="font-size:12px;font-weight:600">${p2?.nombre||'?'}</div><div style="font-size:11px;color:var(--text2)">${a2?.nombre||'?'}</div></div>
+        <span class="badge badge-canje">-${c.costo} pts</span>
+      </div>`;}).join('')
+    :'<div class="empty"><div class="emoji">🛍</div><p>Sin canjes</p></div>';
+}
+
+// ══════════════════════════════════════════
+// PERFIL ALUMNO
+// ══════════════════════════════════════════
+function getPts(alumnoId){
+  const as=DB.get('asignaciones').filter(x=>x.alumnoId===alumnoId);
+  const ca=DB.get('canjes').filter(x=>x.alumnoId===alumnoId);
+  const ganados=as.reduce((s,x)=>s+x.puntos,0);
+  const gastados=ca.reduce((s,x)=>s+x.costo,0);
+  return{ganados,gastados,disponibles:ganados-gastados};
+}
+function renderPerfil(){
+  if(!session||session.rol!=='alumno')return;
+  const a=DB.get('alumnos').find(x=>x.id===session.id);
+  if(!a){cerrarSesion();return;}
+  const as=DB.get('asignaciones').filter(x=>x.alumnoId===a.id);
+  const prods=DB.get('productos'),cats=DB.get('categorias');
+  const {ganados,gastados,disponibles}=getPts(a.id);
+  const prodsHtml=as.length
+    ?`<div class="table-wrapper"><table><thead><tr><th>Producto</th><th>Categoría</th><th>Pts Ganados</th><th>Acción</th></tr></thead><tbody>
+      ${as.map(asn=>{const p=prods.find(x=>x.id===asn.prodId),c=cats.find(x=>x.id===p?.catId);
+        return `<tr><td><strong>${p?.nombre||'?'}</strong></td>
+          <td><span class="badge badge-cat">${c?.icono||''} ${c?.nombre||'?'}</span></td>
+          <td><span class="badge badge-pts">+${asn.puntos} pts</span></td>
+          <td><button class="btn btn-secondary btn-sm" onclick="openEditPuntos(${asn.id},${asn.puntos},'self')">✏️ Editar pts</button></td>
+        </tr>`;}).join('')}
+      </tbody></table></div>`
+    :`<div class="empty"><div class="emoji">📦</div><p>Sin productos. <button class="btn btn-success btn-sm" onclick="openAsignarSelf()">＋ Agregar</button></p></div>`;
+  document.getElementById('perfil-content').innerHTML=`
+    <div class="alumno-hero">
+      <div class="avatar">${initials(a.nombre)}</div>
+      <div><div class="aname">${a.nombre}</div><div class="ameta"><span>🎓 ${a.especialidad}</span><span>📋 Grupo ${a.grupo}</span><span>📦 ${as.length} producto(s)</span></div></div>
+    </div>
+    <div class="balance-bar">
+      <div class="bal-item"><div class="bl">⭐ Puntos Ganados</div><div class="bv earned">${ganados}</div></div>
+      <div class="bal-divider"></div>
+      <div class="bal-item"><div class="bl">🛍 Puntos Gastados</div><div class="bv spent">${gastados}</div></div>
+      <div class="bal-divider"></div>
+      <div class="bal-item"><div class="bl">💰 Disponibles</div><div class="bv avail">${disponibles}</div></div>
+      <div style="margin-left:auto"><button class="btn btn-purple" onclick="showSection('sec-tienda')">🛍 Ir a Tienda →</button></div>
+    </div>
+    <div style="margin-bottom:11px;font-size:15px;font-weight:700">Mis Productos Registrados</div>
+    ${prodsHtml}`;
+}
+
+// ══════════════════════════════════════════
+// TIENDA
+// ══════════════════════════════════════════
+function renderTiendaBalance(){
+  if(!session||session.rol!=='alumno')return;
+  const {ganados,gastados,disponibles}=getPts(session.id);
+  document.getElementById('tienda-balance').innerHTML=`
+    <div class="balance-bar" style="margin-bottom:16px">
+      <div class="bal-item"><div class="bl">⭐ Ganados</div><div class="bv earned">${ganados}</div></div>
+      <div class="bal-divider"></div>
+      <div class="bal-item"><div class="bl">🛍 Gastados</div><div class="bv spent">${gastados}</div></div>
+      <div class="bal-divider"></div>
+      <div class="bal-item"><div class="bl">💰 Disponibles para Canje</div><div class="bv avail">${disponibles}</div></div>
+    </div>`;
+}
+function renderTienda(){
+  // Obtener todos los productos que al menos un alumno ha registrado (asignaciones)
+  const asignaciones=DB.get('asignaciones');
+  const cats=DB.get('categorias');
+  const allProds=DB.get('productos');
+  const alumnos=DB.get('alumnos');
+
+  // Agrupar asignaciones por producto para obtener info real de puntos y alumnos que lo registraron
+  const prodMap={};
+  asignaciones.forEach(a=>{
+    if(!prodMap[a.prodId]){
+      prodMap[a.prodId]={prodId:a.prodId,puntosList:[],alumnosIds:[]};
+    }
+    prodMap[a.prodId].puntosList.push(a.puntos);
+    if(!prodMap[a.prodId].alumnosIds.includes(a.alumnoId)){
+      prodMap[a.prodId].alumnosIds.push(a.alumnoId);
+    }
+  });
+
+  // Construir lista de productos de canje basada en lo que los alumnos registraron
+  // Si el producto existe en el catálogo lo complementamos; si no, mostramos con datos de asignación
+  const canjeItems=Object.values(prodMap).map(pm=>{
+    const p=allProds.find(x=>x.id===pm.prodId);
+    const promPuntos=Math.round(pm.puntosList.reduce((s,v)=>s+v,0)/pm.puntosList.length);
+    const costo=p?.costo||promPuntos;
+    return {
+      id:pm.prodId,
+      nombre:p?.nombre||'Producto #'+pm.prodId,
+      catId:p?.catId||0,
+      desc:p?.desc||'',
+      canjeable:p?.canjeable!==0?1:0,
+      costo,
+      promPuntos,
+      totalRegistros:pm.puntosList.length,
+      alumnosIds:pm.alumnosIds,
+    };
+  }).filter(x=>x.canjeable==1);
+
+  const q=document.getElementById('tienda-search')?.value.toLowerCase()||'';
+  const fc=document.getElementById('tienda-cat')?.value||'';
+  const catSel=document.getElementById('tienda-cat');
+  if(catSel){const v=catSel.value;catSel.innerHTML='<option value="">Todas las categorías</option>'+cats.map(c=>`<option value="${c.id}" ${c.id==v?'selected':''}>${c.icono||''} ${c.nombre}</option>`).join('');}
+  const {disponibles}=session?.rol==='alumno'?getPts(session.id):{disponibles:99999};
+
+  const filtered=canjeItems.filter(p=>
+    (!q||p.nombre.toLowerCase().includes(q)||(p.desc||'').toLowerCase().includes(q))&&
+    (!fc||p.catId==fc)
+  );
+
+  const grid=document.getElementById('tienda-grid');
+  if(!filtered.length){
+    grid.innerHTML='<div class="empty"><div class="emoji">🛍</div><p>No hay productos disponibles.<br><small style="color:var(--text3)">Los productos aparecen cuando los alumnos los registran.</small></p></div>';
+    return;
+  }
+
+  grid.innerHTML=`<div class="shop-grid">${filtered.map(p=>{
+    const c=cats.find(x=>x.id===p.catId);
+    const canAfford=disponibles>=p.costo,isAlumno=session?.rol==='alumno';
+    // Disponibilidad: total registros - total canjes de ese producto
+    const totalCanjes=DB.get('canjes').filter(cj=>cj.prodId===p.id).length;
+    const disponibleUnidades=Math.max(0,p.totalRegistros-totalCanjes);
+    const hayStock=disponibleUnidades>0;
+    const nomAlumnos=p.alumnosIds.slice(0,2).map(id=>alumnos.find(a=>a.id===id)?.nombre.split(' ')[0]||'?');
+    const extraAlumnos=p.alumnosIds.length>2?` y ${p.alumnosIds.length-2} más`:'';
+    const registradoPor=p.alumnosIds.length?`👤 ${nomAlumnos.join(', ')}${extraAlumnos}`:'';
+    const stockColor=hayStock?'var(--accent2)':'var(--accent3)';
+    const stockLabel=hayStock?`✅ ${disponibleUnidades} disponible(s)`:'❌ Sin disponibles';
+    return `<div class="shop-card ${isAlumno&&(!canAfford||!hayStock)?'cannot-afford':''}">
+      <div class="sc-icon">${c?.icono||'📦'}</div>
+      <div class="sc-name">${p.nombre}</div>
+      <div class="sc-cat">${c?.nombre||'Sin categoría'}</div>
+      <div class="sc-desc">${p.desc||''}</div>
+      <div style="font-size:11px;margin-top:4px;padding:5px 8px;background:${hayStock?'rgba(61,232,160,.07)':'rgba(232,79,124,.07)'};border-radius:6px;border:1px solid ${hayStock?'rgba(61,232,160,.2)':'rgba(232,79,124,.2)'}">
+        <span style="color:${stockColor};font-weight:700">${stockLabel}</span>
+        ${registradoPor?`<span style="color:var(--text3);margin-left:6px">· ${registradoPor}</span>`:''}
+      </div>
+      <div class="sc-cost">
+        <div class="sc-price">${p.costo} <span>puntos</span></div>
+        ${isAlumno
+          ?`<button class="btn btn-${canAfford&&hayStock?'primary':'secondary'} btn-sm" ${(!canAfford||!hayStock)?'disabled':''} onclick="confirmarCanje(${p.id})">
+              ${!hayStock?'📦 Agotado':canAfford?'🛍 Canjear':'❌ Sin pts'}
+            </button>`
+          :`<span class="badge badge-pts">${hayStock?'Disponible':'Agotado'}</span>`}
+      </div>
+    </div>`;}).join('')}</div>`;
+}
+function getCostoProducto(prodId){
+  // El costo de canje es el costo definido en el catálogo, o el promedio de puntos registrados por los alumnos
+  const p=DB.get('productos').find(x=>x.id===prodId);
+  if(p&&p.costo)return p.costo;
+  const asigns=DB.get('asignaciones').filter(a=>a.prodId===prodId);
+  if(!asigns.length)return p?.puntos||0;
+  return Math.round(asigns.reduce((s,a)=>s+a.puntos,0)/asigns.length);
+}
+function confirmarCanje(prodId){
+  const p=DB.get('productos').find(x=>x.id===prodId);
+  const costo=getCostoProducto(prodId);
+  const {disponibles}=getPts(session.id);
+  if(disponibles<costo){toast('error','No tienes suficientes puntos');return;}
+  document.getElementById('cc-title').textContent='Canjear: '+(p?.nombre||'Producto #'+prodId);
+  document.getElementById('cc-msg').innerHTML=`Costo: <strong style="color:var(--accent)">${costo} pts</strong><br>Tus puntos disponibles: <strong style="color:var(--accent2)">${disponibles}</strong><br>Quedarán: <strong style="color:var(--accent3)">${disponibles-costo} pts</strong>`;
+  document.getElementById('cc-btn').onclick=()=>ejecutarCanje(prodId);
+  openModal('modal-canje-confirm');
+}
+function ejecutarCanje(prodId){
+  const p=DB.get('productos').find(x=>x.id===prodId);
+  const ca=DB.get('canjes');
+  ca.push({id:DB.nextId('canjes'),alumnoId:session.id,prodId,costo:getCostoProducto(prodId),fecha:new Date().toISOString()});
+  DB.set('canjes',ca);
+  toast('success','🎉 ¡Producto Canjeado! — '+( DB.get('productos').find(x=>x.id===prodId)?.nombre||'Producto'));
+  closeModal('modal-canje-confirm');
+  renderTiendaBalance();renderTienda();renderHistorialCanjes();
+}
+function renderHistorialCanjes(){
+  if(!session||session.rol!=='alumno')return;
+  const ca=[...DB.get('canjes').filter(x=>x.alumnoId===session.id)].sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+  const prods=DB.get('productos'),cats=DB.get('categorias');
+  const c=document.getElementById('historial-canjes');
+  c.innerHTML=ca.length
+    ?ca.map(x=>{const p=prods.find(q=>q.id===x.prodId),cat=cats.find(q=>q.id===p?.catId);
+      return `<div class="canje-item">
+        <div style="font-size:22px">${cat?.icono||'📦'}</div>
+        <div style="flex:1"><div style="font-weight:600;font-size:13px">${p?.nombre||'?'}</div><div style="font-size:11px;color:var(--text2)">${fmtDate(x.fecha)}</div></div>
+        <span class="badge badge-canje">-${x.costo} pts</span>
+      </div>`;}).join('')
+    :'<div class="empty"><div class="emoji">🛍</div><p>Aún no realizas canjes. Ve a la tienda y canjea tus puntos.</p></div>';
+}
+
+// ══════════════════════════════════════════
+// ALUMNOS (admin)
+// ══════════════════════════════════════════
+function renderAlumnos(){
+  const q=document.getElementById('search-alumno')?.value.toLowerCase()||'';
+  const fg=document.getElementById('filter-grupo')?.value||'';
+  const fe=document.getElementById('filter-esp')?.value||'';
+  const alumnos=DB.get('alumnos');
+  const grupos=[...new Set(alumnos.map(a=>a.grupo))].sort();
+  const esps=[...new Set(alumnos.map(a=>a.especialidad))].sort();
+  const gSel=document.getElementById('filter-grupo'),eSel=document.getElementById('filter-esp');
+  if(gSel){const v=gSel.value;gSel.innerHTML='<option value="">Todos los grupos</option>'+grupos.map(g=>`<option value="${g}" ${g===v?'selected':''}>${g}</option>`).join('');}
+  if(eSel){const v=eSel.value;eSel.innerHTML='<option value="">Todas las especialidades</option>'+esps.map(e=>`<option value="${e}" ${e===v?'selected':''}>${e}</option>`).join('');}
+  const fil=alumnos.filter(a=>(!q||a.nombre.toLowerCase().includes(q)||a.especialidad.toLowerCase().includes(q)||a.grupo.toLowerCase().includes(q))&&(!fg||a.grupo===fg)&&(!fe||a.especialidad===fe));
+  const tbody=document.getElementById('tabla-alumnos'),empty=document.getElementById('empty-alumnos');
+  if(!fil.length){tbody.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  tbody.innerHTML=fil.map(a=>{
+    const {ganados,gastados,disponibles}=getPts(a.id);
+    const cnt=DB.get('asignaciones').filter(x=>x.alumnoId===a.id).length;
+    return `<tr>
+      <td><div style="display:flex;align-items:center;gap:8px"><div class="avatar sm">${initials(a.nombre)}</div><div style="font-weight:600">${a.nombre}</div></div></td>
+      <td>${a.especialidad}</td><td><span class="badge badge-grp">${a.grupo}</span></td><td>${cnt}</td>
+      <td><span class="badge badge-pts">+${ganados}</span></td>
+      <td><span class="badge badge-canje">-${gastados}</span></td>
+      <td><span class="badge" style="background:rgba(245,200,66,.15);color:var(--accent);border:1px solid rgba(245,200,66,.2)">${disponibles}</span></td>
+      <td><div style="display:flex;gap:4px;flex-wrap:wrap">
+        <button class="btn btn-secondary btn-xs" onclick="verDetalle(${a.id})">👁</button>
+        <button class="btn btn-success btn-xs" onclick="openAsignar(${a.id})">＋</button>
+        <button class="btn btn-secondary btn-xs" onclick="editAlumno(${a.id})">✏️</button>
+        <button class="btn btn-danger btn-xs" onclick="eliminarAlumno(${a.id})">🗑</button>
+      </div></td>
+    </tr>`;}).join('');
+}
+function openModalAlumno(){
+  ['edit-alumno-id','a-nombre','a-especialidad','a-grupo'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('modal-alumno-title').textContent='➕ Nuevo Alumno';
+  openModal('modal-alumno');
+}
+function editAlumno(id){
+  const a=DB.get('alumnos').find(x=>x.id===id);if(!a)return;
+  document.getElementById('edit-alumno-id').value=id;
+  document.getElementById('a-nombre').value=a.nombre;
+  document.getElementById('a-especialidad').value=a.especialidad;
+  document.getElementById('a-grupo').value=a.grupo;
+  document.getElementById('modal-alumno-title').textContent='✏️ Editar Alumno';
+  openModal('modal-alumno');
+}
+function guardarAlumno(){
+  const nombre=document.getElementById('a-nombre').value.trim();
+  const esp=document.getElementById('a-especialidad').value.trim();
+  const grupo=document.getElementById('a-grupo').value.trim();
+  if(!nombre||!esp||!grupo){toast('error','Completa todos los campos');return;}
+  const id=document.getElementById('edit-alumno-id').value;
+  const alumnos=DB.get('alumnos');
+  if(id){const idx=alumnos.findIndex(a=>a.id==id);alumnos[idx]={...alumnos[idx],nombre,especialidad:esp,grupo};toast('success','Alumno actualizado');}
+  else{alumnos.push({id:DB.nextId('alumnos'),nombre,especialidad:esp,grupo});toast('success','Alumno registrado');}
+  DB.set('alumnos',alumnos);closeModal('modal-alumno');renderAlumnos();
+}
+function eliminarAlumno(id){
+  if(!confirm('¿Eliminar alumno y todos sus datos?'))return;
+  DB.set('alumnos',DB.get('alumnos').filter(a=>a.id!==id));
+  DB.set('asignaciones',DB.get('asignaciones').filter(a=>a.alumnoId!==id));
+  DB.set('canjes',DB.get('canjes').filter(c=>c.alumnoId!==id));
+  toast('success','Alumno eliminado');renderAlumnos();
+}
+
+// ══════════════════════════════════════════
+// DETALLE ALUMNO
+// ══════════════════════════════════════════
+function verDetalle(alumnoId){
+  const a=DB.get('alumnos').find(x=>x.id===alumnoId);
+  const as=DB.get('asignaciones').filter(x=>x.alumnoId===alumnoId);
+  const ca=DB.get('canjes').filter(x=>x.alumnoId===alumnoId);
+  const prods=DB.get('productos'),cats=DB.get('categorias');
+  const {ganados,gastados,disponibles}=getPts(alumnoId);
+  const pH=as.length
+    ?`<table style="width:100%;border-collapse:collapse"><thead><tr style="background:var(--surface2)">
+        <th style="padding:8px 11px;font-size:10px;text-transform:uppercase;color:var(--text2)">Producto</th>
+        <th style="padding:8px 11px;font-size:10px;text-transform:uppercase;color:var(--text2)">Categoría</th>
+        <th style="padding:8px 11px;font-size:10px;text-transform:uppercase;color:var(--text2)">Puntos</th>
+        <th style="padding:8px 11px;font-size:10px;text-transform:uppercase;color:var(--text2)">Acción</th></tr></thead><tbody>
+      ${as.map(asn=>{const p=prods.find(x=>x.id===asn.prodId),c=cats.find(x=>x.id===p?.catId);
+        return `<tr><td style="padding:10px 11px;border-top:1px solid var(--border);font-weight:600">${p?.nombre||'?'}</td>
+          <td style="padding:10px 11px;border-top:1px solid var(--border)"><span class="badge badge-cat">${c?.icono||''} ${c?.nombre||'?'}</span></td>
+          <td style="padding:10px 11px;border-top:1px solid var(--border)"><span class="badge badge-pts">${asn.puntos} pts</span></td>
+          <td style="padding:10px 11px;border-top:1px solid var(--border)"><div style="display:flex;gap:4px">
+            <button class="btn btn-success btn-xs" onclick="openEditPuntos(${asn.id},${asn.puntos},'admin',${alumnoId})">✏️ pts</button>
+            <button class="btn btn-danger btn-xs" onclick="quitarProducto(${asn.id},${alumnoId})">🗑</button>
+          </div></td></tr>`;}).join('')}
+      </tbody></table>`
+    :'<div style="text-align:center;padding:20px;color:var(--text3)">Sin productos registrados</div>';
+  const cH=ca.length
+    ?ca.map(c=>{const p=prods.find(x=>x.id===c.prodId);
+      return `<div style="display:flex;align-items:center;gap:9px;padding:8px 11px;border-top:1px solid var(--border)">
+        <div style="flex:1;font-size:12px;font-weight:600">${p?.nombre||'?'}</div>
+        <span class="badge badge-canje">-${c.costo} pts</span>
+        <div style="font-size:10px;color:var(--text3)">${fmtDate(c.fecha)}</div>
+      </div>`;}).join('')
+    :'<div style="padding:14px;color:var(--text3);font-size:12px">Sin canjes</div>';
+  document.getElementById('detalle-content').innerHTML=`
+    <div class="alumno-hero">
+      <div class="avatar">${initials(a.nombre)}</div>
+      <div><div class="aname">${a.nombre}</div><div class="ameta"><span>🎓 ${a.especialidad}</span><span>📋 ${a.grupo}</span></div></div>
+      <div style="margin-left:auto;display:flex;gap:14px">
+        <div style="text-align:right"><div style="font-family:'Space Mono';font-size:20px;font-weight:700;color:var(--accent2)">${ganados}</div><div style="font-size:10px;color:var(--text2)">GANADOS</div></div>
+        <div style="text-align:right"><div style="font-family:'Space Mono';font-size:20px;font-weight:700;color:var(--accent3)">${gastados}</div><div style="font-size:10px;color:var(--text2)">GASTADOS</div></div>
+        <div style="text-align:right"><div style="font-family:'Space Mono';font-size:20px;font-weight:700;color:var(--accent)">${disponibles}</div><div style="font-size:10px;color:var(--text2)">DISPONIBLES</div></div>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px">
+      <div style="font-weight:700;font-size:14px">Productos Registrados</div>
+      <button class="btn btn-success btn-sm" onclick="openAsignar(${alumnoId});closeModal('modal-detalle')">＋ Agregar</button>
+    </div>
+    <div class="table-wrapper" style="margin-bottom:14px">${pH}</div>
+    <div style="font-weight:700;font-size:14px;margin-bottom:8px">Historial de Canjes</div>
+    <div class="table-wrapper">${cH}</div>`;
+  openModal('modal-detalle');
+}
+
+// ══════════════════════════════════════════
+// CATEGORÍAS
+// ══════════════════════════════════════════
+function renderCategorias(){
+  const cats=DB.get('categorias'),prods=DB.get('productos');
+  const cm={accent:'rgba(245,200,66,.12)',accent2:'rgba(61,232,160,.12)',accent3:'rgba(232,79,124,.12)',accent4:'rgba(124,106,255,.12)'};
+  const tm={accent:'var(--accent)',accent2:'var(--accent2)',accent3:'var(--accent3)',accent4:'var(--accent4)'};
+  document.getElementById('cats-grid').innerHTML=cats.map(c=>{
+    const cnt=prods.filter(p=>p.catId===c.id).length;
+    const rango=c.ptsMin||c.ptsMax?`${c.ptsMin||0}–${c.ptsMax||'∞'} pts`:'Sin rango';
+    return `<div class="stat-card" style="background:${cm[c.color]||cm.accent};border-color:${tm[c.color]||tm.accent}40">
+      <div style="font-size:26px;margin-bottom:5px">${c.icono||'📦'}</div>
+      <div style="font-weight:700;font-size:14px;color:${tm[c.color]||tm.accent}">${c.nombre}</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:3px">${cnt} producto(s)</div>
+      <div style="font-size:11px;color:${tm[c.color]||tm.accent};margin-top:3px;font-family:'Space Mono'">⭐ ${rango}</div>
+    </div>`;}).join('');
+  const tbody=document.getElementById('tabla-categorias'),empty=document.getElementById('empty-cats');
+  if(!cats.length){tbody.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  tbody.innerHTML=cats.map(c=>{const cnt=prods.filter(p=>p.catId===c.id).length;
+    const rango=c.ptsMin||c.ptsMax?`${c.ptsMin||0} – ${c.ptsMax||'∞'}`:'-';
+    return `<tr><td><span style="font-size:15px">${c.icono||'📦'}</span> <strong>${c.nombre}</strong></td>
+      <td style="color:var(--text2)">${c.desc||'—'}</td>
+      <td><span class="badge badge-pts">${rango} pts</span></td>
+      <td><span class="badge badge-cat">${cnt}</span></td>
+      <td><div style="display:flex;gap:4px">
+        <button class="btn btn-secondary btn-sm" onclick="editCategoria(${c.id})">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="eliminarCategoria(${c.id})">🗑</button>
+      </div></td></tr>`;}).join('');
+}
+function openModalCategoria(){
+  ['edit-cat-id','c-nombre','c-desc','c-icono','c-ptsmin','c-ptsmax'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('c-color').value='accent';document.getElementById('modal-cat-title').textContent='📁 Nueva Categoría';openModal('modal-categoria');
+}
+function editCategoria(id){
+  const c=DB.get('categorias').find(x=>x.id===id);if(!c)return;
+  document.getElementById('edit-cat-id').value=id;
+  document.getElementById('c-nombre').value=c.nombre;
+  document.getElementById('c-desc').value=c.desc||'';
+  document.getElementById('c-icono').value=c.icono||'';
+  document.getElementById('c-color').value=c.color||'accent';
+  document.getElementById('c-ptsmin').value=c.ptsMin||0;
+  document.getElementById('c-ptsmax').value=c.ptsMax||0;
+  document.getElementById('modal-cat-title').textContent='✏️ Editar Categoría';openModal('modal-categoria');
+}
+function guardarCategoria(){
+  const nombre=document.getElementById('c-nombre').value.trim();if(!nombre){toast('error','Nombre requerido');return;}
+  const ptsMin=parseInt(document.getElementById('c-ptsmin').value)||0;
+  const ptsMax=parseInt(document.getElementById('c-ptsmax').value)||0;
+  if(ptsMax>0&&ptsMin>ptsMax){toast('error','El mínimo no puede ser mayor al máximo');return;}
+  const id=document.getElementById('edit-cat-id').value,cats=DB.get('categorias');
+  const obj={nombre,desc:document.getElementById('c-desc').value.trim(),icono:document.getElementById('c-icono').value.trim()||'📦',color:document.getElementById('c-color').value,ptsMin,ptsMax};
+  if(id){const idx=cats.findIndex(c=>c.id==id);cats[idx]={...cats[idx],...obj};toast('success','Categoría actualizada');}
+  else{cats.push({id:DB.nextId('categorias'),...obj});toast('success','Categoría creada');}
+  DB.set('categorias',cats);closeModal('modal-categoria');renderCategorias();refreshSelects();
+}
+function eliminarCategoria(id){
+  if(DB.get('productos').some(p=>p.catId===id)){toast('error','Tiene productos asociados');return;}
+  if(!confirm('¿Eliminar?'))return;
+  DB.set('categorias',DB.get('categorias').filter(c=>c.id!==id));toast('success','Eliminada');renderCategorias();
+}
+
+// ══════════════════════════════════════════
+// PRODUCTOS
+// ══════════════════════════════════════════
+function refreshSelects(){
+  const cats=DB.get('categorias');
+  ['p-categoria','filter-cat','rg-cat','asig-cat'].forEach(id=>{
+    const sel=document.getElementById(id);if(!sel)return;
+    const v=sel.value;
+    const pre=id==='p-categoria'?'':'<option value="">— Todas —</option>';
+    sel.innerHTML=pre+cats.map(c=>`<option value="${c.id}">${c.icono||''} ${c.nombre}</option>`).join('');
+    if(v)sel.value=v;
+  });
+  refreshAsigProdSel();refreshRgProdSel();
+}
+function renderProductos(){
+  refreshSelects();
+  const q=document.getElementById('search-prod')?.value.toLowerCase()||'';
+  const fc=document.getElementById('filter-cat')?.value||'';
+  const prods=DB.get('productos').filter(p=>(!q||p.nombre.toLowerCase().includes(q)||(p.desc||'').toLowerCase().includes(q))&&(!fc||p.catId==fc));
+  const cats=DB.get('categorias');
+  const tbody=document.getElementById('tabla-productos'),empty=document.getElementById('empty-prods');
+  if(!prods.length){tbody.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  tbody.innerHTML=prods.map(p=>{const c=cats.find(x=>x.id===p.catId);
+    return `<tr><td><strong>${p.nombre}</strong></td>
+      <td>${c?`<span class="badge badge-cat">${c.icono||''} ${c.nombre}</span>`:'—'}</td>
+      <td><span class="badge badge-pts">+${p.puntos}</span></td>
+      <td><span class="badge badge-canje">${p.costo||0} pts</span></td>
+      <td>${p.canjeable?'✅':'❌'}</td>
+      <td style="color:var(--text2);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.desc||'—'}</td>
+      <td><div style="display:flex;gap:4px">
+        <button class="btn btn-secondary btn-sm" onclick="editProducto(${p.id})">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="eliminarProducto(${p.id})">🗑</button>
+      </div></td></tr>`;}).join('');
+}
+function openModalProducto(){
+  refreshSelects();
+  ['edit-prod-id','p-nombre','p-puntos','p-costo','p-desc'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('p-canjeable').value='1';document.getElementById('modal-prod-title').textContent='📦 Nuevo Producto';openModal('modal-producto');
+}
+function editProducto(id){
+  const p=DB.get('productos').find(x=>x.id===id);if(!p)return;
+  refreshSelects();
+  document.getElementById('edit-prod-id').value=id;document.getElementById('p-nombre').value=p.nombre;document.getElementById('p-categoria').value=p.catId;document.getElementById('p-puntos').value=p.puntos;document.getElementById('p-costo').value=p.costo||0;document.getElementById('p-desc').value=p.desc||'';document.getElementById('p-canjeable').value=p.canjeable?'1':'0';
+  document.getElementById('modal-prod-title').textContent='✏️ Editar Producto';openModal('modal-producto');
+}
+function guardarProducto(){
+  const nombre=document.getElementById('p-nombre').value.trim(),catId=parseInt(document.getElementById('p-categoria').value);
+  if(!nombre||!catId){toast('error','Nombre y categoría requeridos');return;}
+  const id=document.getElementById('edit-prod-id').value,prods=DB.get('productos');
+  const obj={nombre,catId,puntos:parseInt(document.getElementById('p-puntos').value)||0,costo:parseInt(document.getElementById('p-costo').value)||0,desc:document.getElementById('p-desc').value.trim(),canjeable:parseInt(document.getElementById('p-canjeable').value)};
+  if(id){const idx=prods.findIndex(p=>p.id==id);prods[idx]={...prods[idx],...obj};toast('success','Producto actualizado');}
+  else{prods.push({id:DB.nextId('productos'),...obj});toast('success','Guardado');}
+  DB.set('productos',prods);closeModal('modal-producto');renderProductos();
+}
+function eliminarProducto(id){
+  if(!confirm('¿Eliminar producto?'))return;
+  DB.set('productos',DB.get('productos').filter(p=>p.id!==id));
+  DB.set('asignaciones',DB.get('asignaciones').filter(a=>a.prodId!==id));
+  toast('success','Eliminado');renderProductos();
+}
+
+// ══════════════════════════════════════════
+// ASIGNACIONES
+// ══════════════════════════════════════════
+function openAsignar(alumnoId){
+  refreshSelects();
+  document.getElementById('asignar-alumno-id').value=alumnoId;
+  document.getElementById('asig-cat').value='';
+  refreshAsigProdSel(alumnoId);
+  openModal('modal-asignar');
+}
+function openAsignarSelf(){if(session?.rol==='alumno')openAsignar(session.id);}
+function refreshAsigProdSel(forceId){
+  const alumnoId=parseInt(forceId||document.getElementById('asignar-alumno-id')?.value)||0;
+  const catId=parseInt(document.getElementById('asig-cat')?.value)||0;
+  const ya=DB.get('asignaciones').filter(a=>a.alumnoId===alumnoId).map(a=>a.prodId);
+  const prods=DB.get('productos').filter(p=>!ya.includes(p.id)&&(!catId||p.catId===catId));
+  const cats=DB.get('categorias');
+  const sel=document.getElementById('asignar-producto');if(!sel)return;
+  sel.innerHTML=prods.length
+    ?prods.map(p=>{const c=cats.find(x=>x.id===p.catId);return `<option value="${p.id}">${c?.icono||''} ${p.nombre} (+${p.puntos} pts)</option>`;}).join('')
+    :'<option value="">Sin productos disponibles</option>';
+}
+function asignarProducto(){
+  const alumnoId=parseInt(document.getElementById('asignar-alumno-id').value),prodId=parseInt(document.getElementById('asignar-producto').value);
+  if(!prodId){toast('error','Selecciona un producto');return;}
+  const prod=DB.get('productos').find(p=>p.id===prodId);
+  const as=DB.get('asignaciones');
+  if(as.find(a=>a.alumnoId===alumnoId&&a.prodId===prodId)){toast('error','Ya tiene ese producto');return;}
+  as.push({id:DB.nextId('asignaciones'),alumnoId,prodId,puntos:prod.puntos,fecha:new Date().toISOString()});
+  DB.set('asignaciones',as);
+  toast('success','✅ ¡Producto Agregado! +'+prod.puntos+' pts');
+  closeModal('modal-asignar');
+  if(session?.rol==='alumno'){renderPerfil();renderTiendaBalance();renderTienda();}
+  else renderAlumnos();
+}
+function quitarProducto(asignId,alumnoId){
+  if(!confirm('¿Quitar producto?'))return;
+  DB.set('asignaciones',DB.get('asignaciones').filter(a=>a.id!==asignId));
+  toast('success','Quitado');closeModal('modal-detalle');
+  setTimeout(()=>verDetalle(alumnoId),150);renderAlumnos();
+}
+
+// ══════════════════════════════════════════
+// EDITAR PUNTOS
+// ══════════════════════════════════════════
+// mode: 'self' | 'admin'
+function openEditPuntos(asignId,currentPts,mode,alumnoId){
+  document.getElementById('edit-asign-id').value=asignId;
+  document.getElementById('new-puntos').value=currentPts;
+  document.getElementById('modal-puntos').dataset.mode=mode||'self';
+  document.getElementById('modal-puntos').dataset.aid=alumnoId||0;
+  openModal('modal-puntos');
+}
+function guardarPuntos(){
+  const id=parseInt(document.getElementById('edit-asign-id').value);
+  const pts=parseInt(document.getElementById('new-puntos').value);
+  const mode=document.getElementById('modal-puntos').dataset.mode;
+  const alumnoId=parseInt(document.getElementById('modal-puntos').dataset.aid)||0;
+  if(isNaN(pts)||pts<0){toast('error','Valor inválido');return;}
+  const as=DB.get('asignaciones'),idx=as.findIndex(a=>a.id===id);if(idx<0)return;
+  as[idx].puntos=pts;DB.set('asignaciones',as);
+  toast('success','Puntos actualizados');
+  closeModal('modal-puntos');
+  if(mode==='self'){renderPerfil();renderTiendaBalance();renderTienda();}
+  else if(alumnoId){closeModal('modal-detalle');setTimeout(()=>verDetalle(alumnoId),150);}
+  renderAlumnos();
+}
+
+// ══════════════════════════════════════════
+// CANJES ADMIN
+// ══════════════════════════════════════════
+function renderCanjesAdmin(){
+  const q=document.getElementById('search-canjes')?.value.toLowerCase()||'';
+  const canjes=DB.get('canjes'),prods=DB.get('productos'),alumnos=DB.get('alumnos');
+  const fil=canjes.filter(c=>{
+    const a=alumnos.find(x=>x.id===c.alumnoId),p=prods.find(x=>x.id===c.prodId);
+    return!q||(a?.nombre.toLowerCase().includes(q))||(p?.nombre.toLowerCase().includes(q));
+  });
+  const tbody=document.getElementById('tabla-canjes'),empty=document.getElementById('empty-canjes');
+  if(!fil.length){tbody.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  tbody.innerHTML=[...fil].sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(c=>{
+    const a=alumnos.find(x=>x.id===c.alumnoId),p=prods.find(x=>x.id===c.prodId);
+    return `<tr>
+      <td><div style="display:flex;align-items:center;gap:7px"><div class="avatar sm">${initials(a?.nombre||'?')}</div><div style="font-weight:600">${a?.nombre||'?'}</div></div></td>
+      <td><strong>${p?.nombre||'?'}</strong></td>
+      <td><span class="badge badge-canje">-${c.costo} pts</span></td>
+      <td style="color:var(--text2);font-size:11px">${fmtDate(c.fecha)}</td>
+      <td><button class="btn btn-danger btn-xs" onclick="devolverCanje(${c.id})">↩ Devolver</button></td>
+    </tr>`;}).join('');
+}
+function devolverCanje(id){
+  const c=DB.get('canjes').find(x=>x.id===id);if(!c||!confirm('¿Devolver canje? Los puntos serán restituidos.'))return;
+  DB.set('canjes',DB.get('canjes').filter(x=>x.id!==id));
+  const a=DB.get('alumnos').find(x=>x.id===c.alumnoId);
+  toast('success','Canje devuelto · +'+c.costo+' pts restituidos a '+(a?.nombre.split(' ')[0]||'alumno'));
+  renderCanjesAdmin();
+}
+
+// ══════════════════════════════════════════
+// RANKING
+// ══════════════════════════════════════════
+function setRankTab(tab,btn){
+  rankTab=tab;
+  document.querySelectorAll('#sec-ranking .tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');renderRanking();
+}
+function getRanking(mode){
+  const m=mode||rankTab;
+  return DB.get('alumnos').map(a=>{
+    const {ganados,gastados,disponibles}=getPts(a.id);
+    const cjCnt=DB.get('canjes').filter(x=>x.alumnoId===a.id).length;
+    const pCnt=DB.get('asignaciones').filter(x=>x.alumnoId===a.id).length;
+    return{al:a,ganados,gastados,disponibles,cjCnt,pCnt};
+  }).sort((a,b)=>m==='ganados'?b.ganados-a.ganados:m==='disponibles'?b.disponibles-a.disponibles:b.cjCnt-a.cjCnt);
+}
+function renderRanking(){
+  const rk=getRanking();
+  const c=document.getElementById('ranking-list');
+  if(!rk.length){c.innerHTML='<div class="empty"><div class="emoji">🏆</div><p>Sin datos</p></div>';return;}
+  c.innerHTML=rk.map((r,i)=>{
+    const nc=i===0?'gold':i===1?'silver':i===2?'bronze':'';
+    const med=i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+    const val=rankTab==='ganados'?r.ganados:rankTab==='disponibles'?r.disponibles:r.cjCnt;
+    const lbl=rankTab==='ganados'?'pts ganados':rankTab==='disponibles'?'pts disp.':'canjes';
+    return `<div class="rank-item" onclick="${session?.rol==='admin'?`verDetalle(${r.al.id})`:''}">
+      <div class="rank-num ${nc}">${med||i+1}</div>
+      <div class="avatar sm">${initials(r.al.nombre)}</div>
+      <div class="rank-info">
+        <div class="rank-name">${r.al.nombre}</div>
+        <div class="rank-meta">🎓 ${r.al.especialidad} · 📋 ${r.al.grupo} · 📦 ${r.pCnt} prods · 🛍 ${r.cjCnt} canjes</div>
+      </div>
+      <div class="rank-pts">${val}<span>${lbl}</span></div>
+    </div>`;}).join('');
+}
+
+// ══════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════
+function initials(n){return(n||'?').split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase();}
+function fmtDate(iso){try{return new Date(iso).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch{return iso;}}
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-overlay').forEach(el=>{el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');});});
+let ttimer;
+function toast(type,msg){
+  const el=document.getElementById('toast'),ic=el.querySelector('.ticon');
+  document.getElementById('toast-msg').textContent=msg;
+  el.className=`show ${type}`;ic.textContent=type==='success'?'✓':type==='info'?'ℹ':'✕';
+  clearTimeout(ttimer);ttimer=setTimeout(()=>el.classList.remove('show'),3500);
+}
+
+// INIT
+seed();
+refreshSelects();
+</script>
+</body>
+</html>
