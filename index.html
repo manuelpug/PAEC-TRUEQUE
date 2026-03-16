@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Trueque Ecológico - CBTis 118</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4fdf4; margin: 0; padding: 20px; }
+        .header { text-align: center; color: #2e7d32; }
+        .logo { max-width: 150px; margin-bottom: 10px; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .nav-buttons { display: flex; gap: 10px; margin-bottom: 20px; justify-content: center; flex-wrap: wrap; }
+        button { background-color: #4CAF50; color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 5px; font-weight: bold; }
+        button:hover { background-color: #45a049; }
+        .seccion { display: none; }
+        .activa { display: block; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-weight: bold; }
+        .form-group input, .form-group select { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; }
+        .tabla-puntos { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .tabla-puntos th, .tabla-puntos td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        .tabla-puntos th { background-color: #e8f5e9; }
+        .btn-agotado { color: #d32f2f; font-weight: bold; text-decoration: line-through; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <img src="logo.jpg" alt="Logo Trueque Ecológico" class="logo">
+        <h1>Trueque Ecológico</h1>
+        <p>Trae tus objetos en buen estado, gana puntos y cámbialos por lo que necesites.</p>
+    </div>
+
+    <div class="nav-buttons">
+        <button onclick="mostrarSeccion('registro')">Registrar Alumno y Objetos</button>
+        <button onclick="mostrarSeccion('canjear')">Inventario / Canjear Puntos</button>
+        <button onclick="mostrarSeccion('perfil')">Buscar Perfil de Alumno</button>
+    </div>
+
+    <div id="registro" class="seccion activa">
+        <h2>Registro de Alumno y Aportación de Objetos</h2>
+        <form id="formRegistro">
+            <div class="form-group">
+                <label>Nombre Completo:</label>
+                <input type="text" id="nombre" required>
+            </div>
+            <div class="form-group">
+                <label>Especialidad:</label>
+                <input type="text" id="especialidad" placeholder="Ej. Programación, Contabilidad..." required>
+            </div>
+            <div class="form-group">
+                <label>Grupo:</label>
+                <input type="text" id="grupo" required>
+            </div>
+
+            <hr style="margin: 20px 0;">
+            <h3>Objetos a aportar (Máximo 10)</h3>
+            <div id="contenedorProductos"></div>
+            
+            <button type="button" onclick="agregarCampoProducto()" style="background-color: #2196F3; margin-bottom: 15px;">+ Añadir un objeto</button>
+            <br>
+            <button type="button" onclick="registrarAlumnoConProductos()" style="width: 100%; font-size: 16px; padding: 15px;">Guardar Alumno y Productos</button>
+        </form>
+    </div>
+
+    <div id="canjear" class="seccion">
+        <h2>Mercadito de Trueque (Inventario)</h2>
+        <div class="form-group" style="background: #e3f2fd; padding: 15px; border-radius: 8px;">
+            <label>Nombre o ID del Alumno comprador:</label>
+            <input type="text" id="id_alumno_canje" placeholder="Ingresa el ID o Nombre de quien va a canjear" style="width: 50%;">
+        </div>
+
+        <p>Selecciona un objeto disponible.</p>
+        <table class="tabla-puntos" id="tabla_inventario">
+            <thead>
+                <tr>
+                    <th>Categoría</th>
+                    <th>Producto Exacto</th>
+                    <th>Valor</th>
+                    <th>Estado / Acción</th>
+                </tr>
+            </thead>
+            <tbody id="cuerpo_inventario"></tbody>
+        </table>
+    </div>
+
+    <div id="perfil" class="seccion">
+        <h2>Buscar Perfil del Alumno</h2>
+        <div class="form-group">
+            <label>Ingresa el Nombre o ID del Alumno:</label>
+            <input type="text" id="buscar_termino" placeholder="Ej. 1  o  Juan Pérez">
+            <button type="button" onclick="buscarAlumno()" style="margin-top: 10px;">Buscar</button>
+        </div>
+        
+        <div id="resultadoBusqueda" style="display: none; margin-top: 20px; padding: 15px; background-color: #f1f8e9; border-radius: 8px;">
+            <h3 style="color: #2e7d32; border-bottom: 2px solid #2e7d32; padding-bottom: 5px;">Datos del Alumno (#<span id="res_id"></span>)</h3>
+            <p><strong>Nombre:</strong> <span id="res_nombre"></span></p>
+            <p><strong>Especialidad y Grupo:</strong> <span id="res_esp_grupo"></span></p>
+            <p style="font-size: 1.3em;"><strong>Puntos Disponibles:</strong> <span id="res_puntos" style="color: #d32f2f; font-weight: bold;"></span></p>
+
+            <h4 style="margin-top: 20px;">Objetos Aportados:</h4>
+            <ul id="lista_aportados" style="margin-top: 0;"></ul>
+
+            <h4 style="margin-top: 20px;">Objetos Canjeados (Trueques):</h4>
+            <ul id="lista_canjeados" style="margin-top: 0;"></ul>
+        </div>
+    </div>
+</div>
+
+<script>
+    function mostrarSeccion(id) {
+        document.querySelectorAll('.seccion').forEach(div => div.classList.remove('activa'));
+        document.getElementById(id).classList.add('activa');
+        if(id === 'canjear') cargarInventario();
+    }
+
+    let contadorProductos = 0;
+
+    function agregarCampoProducto() {
+        if(contadorProductos >= 10) {
+            alert("Un alumno solo puede aportar un máximo de 10 objetos.");
+            return;
+        }
+        contadorProductos++;
+        
+        const div = document.createElement('div');
+        div.className = 'producto-item';
+        div.style.border = "1px solid #ccc";
+        div.style.padding = "10px";
+        div.style.marginBottom = "10px";
+        div.style.borderRadius = "5px";
+
+        div.innerHTML = `
+            <strong>Objeto ${contadorProductos}:</strong>
+            <div class="form-group" style="margin-top: 5px;">
+                <select class="cat-producto" required>
+                    <option value="" disabled selected>Elige una categoría...</option>
+                    <option value="Útiles escolares" data-min="1" data-max="3">Útiles escolares (1 a 3 pts)</option>
+                    <option value="Juegos de mesa" data-min="3" data-max="5">Juegos de mesa (3 a 5 pts)</option>
+                    <option value="Ropa" data-min="4" data-max="8">Ropa (4 a 8 pts)</option>
+                    <option value="Electrónicos" data-min="5" data-max="10">Electrónicos (5 a 10 pts)</option>
+                    <option value="Otros" data-min="1" data-max="10">Otros (1 a 10 pts)</option>
+                </select>
+                <input type="text" class="desc-producto" placeholder="Escribe el producto exacto..." required style="margin-top: 5px;">
+                <input type="number" class="pts-producto" placeholder="Puntos a otorgar" required style="margin-top: 5px;">
+            </div>
+            <button type="button" onclick="esteEliminar(this)" style="background-color: #f44336; padding: 5px 10px; font-size: 12px;">X Quitar</button>
+        `;
+        document.getElementById('contenedorProductos').appendChild(div);
+    }
+
+    function esteEliminar(boton) {
+        boton.parentElement.remove();
+        contadorProductos--;
+    }
+
+    function registrarAlumnoConProductos() {
+        let nombre = document.getElementById('nombre').value;
+        let especialidad = document.getElementById('especialidad').value;
+        let grupo = document.getElementById('grupo').value;
+        
+        if(!nombre || !especialidad || !grupo) return alert("Llena los datos del alumno.");
+
+        let productos = [];
+        let items = document.querySelectorAll('.producto-item');
+        let validacionPasada = true;
+        
+        items.forEach(item => {
+            let catSelect = item.querySelector('.cat-producto');
+            let cat = catSelect.value;
+            let desc = item.querySelector('.desc-producto').value;
+            let ptsInput = item.querySelector('.pts-producto').value;
+            
+            if(cat && desc && ptsInput) {
+                let pts = parseInt(ptsInput);
+                let min = parseInt(catSelect.options[catSelect.selectedIndex].getAttribute('data-min'));
+                let max = parseInt(catSelect.options[catSelect.selectedIndex].getAttribute('data-max'));
+                
+                if(pts < min || pts > max) {
+                    alert(`Error en la categoría "${cat}": Los puntos deben estar entre ${min} y ${max}.`);
+                    validacionPasada = false;
+                } else {
+                    productos.push({ categoria: cat, descripcion: desc, puntos: pts });
+                }
+            }
+        });
+
+        if(!validacionPasada) return;
+
+        let formData = new FormData();
+        formData.append('action', 'registrar_todo');
+        formData.append('nombre', nombre);
+        formData.append('especialidad', especialidad);
+        formData.append('grupo', grupo);
+        formData.append('productos', JSON.stringify(productos));
+
+        fetch('api.php', { method: 'POST', body: formData })
+        .then(res => res.text())
+        .then(data => {
+            alert(data);
+            document.getElementById('formRegistro').reset();
+            document.getElementById('contenedorProductos').innerHTML = '';
+            contadorProductos = 0;
+        });
+    }
+
+    function cargarInventario() {
+        let formData = new FormData();
+        formData.append('action', 'cargar_inventario');
+
+        fetch('api.php', { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+            let tbody = document.getElementById('cuerpo_inventario');
+            tbody.innerHTML = '';
+            data.forEach(item => {
+                let fila = `<tr>
+                    <td>${item.categoria}</td>
+                    <td>${item.descripcion}</td>
+                    <td>${item.puntos_otorgados} pts</td>
+                    <td>`;
+                
+                if(item.estado === 'disponible') {
+                    fila += `<button onclick="realizarCanje(${item.id}, ${item.puntos_otorgados}, '${item.descripcion}')" style="background: #ff9800; padding: 5px;">Canjear</button>`;
+                } else {
+                    fila += `<span class="btn-agotado">AGOTADO</span>`;
+                }
+                fila += `</td></tr>`;
+                tbody.innerHTML += fila;
+            });
+        });
+    }
+
+    function realizarCanje(id_producto, costo_puntos, descripcion_producto) {
+        let identificador = document.getElementById('id_alumno_canje').value.trim();
+        if(!identificador) return alert("Primero ingresa el Nombre o ID del alumno.");
+
+        if(confirm(`¿Confirmar canje de "${descripcion_producto}" por ${costo_puntos} puntos para: ${identificador}?`)) {
+            let formData = new FormData();
+            formData.append('action', 'realizar_canje');
+            formData.append('identificador_alumno', identificador);
+            formData.append('producto_id', id_producto);
+            formData.append('costo', costo_puntos);
+            formData.append('descripcion', descripcion_producto);
+
+            fetch('api.php', { method: 'POST', body: formData })
+            .then(res => res.text())
+            .then(data => {
+                alert(data);
+                cargarInventario();
+            });
+        }
+    }
+
+    function buscarAlumno() {
+        let termino = document.getElementById('buscar_termino').value;
+        if(!termino) return alert("Ingresa el ID o el Nombre del alumno.");
+
+        let formData = new FormData();
+        formData.append('action', 'buscar_alumno');
+        formData.append('termino', termino);
+
+        fetch('api.php', { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+            if(data.error) {
+                alert(data.error);
+                document.getElementById('resultadoBusqueda').style.display = 'none';
+            } else {
+                document.getElementById('resultadoBusqueda').style.display = 'block';
+                document.getElementById('res_id').textContent = data.alumno.id;
+                document.getElementById('res_nombre').textContent = data.alumno.nombre;
+                document.getElementById('res_esp_grupo').textContent = data.alumno.especialidad + ' - ' + data.alumno.grupo;
+                document.getElementById('res_puntos').textContent = data.alumno.puntos_actuales;
+
+                let ulAportados = document.getElementById('lista_aportados');
+                ulAportados.innerHTML = '';
+                if(data.aportados.length === 0) {
+                    ulAportados.innerHTML = '<li>Sin aportaciones.</li>';
+                } else {
+                    data.aportados.forEach(item => {
+                        let estadoTexto = item.estado === 'agotado' ? '(Ya se lo llevaron)' : '(En inventario)';
+                        ulAportados.innerHTML += `<li>${item.categoria} - ${item.descripcion} <strong>(+${item.puntos_otorgados} pts)</strong> <em>${estadoTexto}</em></li>`;
+                    });
+                }
+
+                let ulCanjeados = document.getElementById('lista_canjeados');
+                ulCanjeados.innerHTML = '';
+                if(data.canjeados.length === 0) {
+                    ulCanjeados.innerHTML = '<li>Aún no ha realizado trueques.</li>';
+                } else {
+                    data.canjeados.forEach(item => {
+                        ulCanjeados.innerHTML += `<li>${item.producto_llevado} <strong>(-${item.puntos_gastados} pts)</strong> - <em>${item.fecha}</em></li>`;
+                    });
+                }
+            }
+        })
+        .catch(error => {
+            alert("Error de conexión con el servidor.");
+        });
+    }
+</script>
+
+</body>
+</html>
