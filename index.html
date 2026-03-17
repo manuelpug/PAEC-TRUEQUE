@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Trueque - CBTis 118</title>
+    <style>
+        :root { --verde: #2e7d32; --azul: #1565c0; --naranja: #f57c00; --bg: #f8f9fa; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 15px; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .nav { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+        button { padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; background: var(--verde); color: white; font-weight: bold; }
+        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .section { display: none; animation: fadeIn 0.3s; }
+        .active { display: block; }
+        .info-box { background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 5px solid var(--azul); }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; }
+        .admin-card { border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+    </style>
+</head>
+<body onload="ver('inicio')">
+
+<div class="container">
+    <h1 style="text-align:center; color:var(--verde)">♻️ Mercadito Ecológico</h1>
+    
+    <div class="nav">
+        <button onclick="ver('inicio')">🏆 Ranking</button>
+        <button onclick="ver('registro')">📝 Registrarse</button>
+        <button onclick="ver('tienda')">🛒 Tienda</button>
+        <button onclick="ver('admin')" style="background:#455a64">⚙️ Admin</button>
+    </div>
+
+    <div id="inicio" class="section">
+        <h3>Top 10 Colaboradores</h3>
+        <table id="tabla_ranking"><thead><tr><th>Nombre</th><th>Puntos</th></tr></thead><tbody></tbody></table>
+    </div>
+
+    <div id="registro" class="section">
+        <div id="paso1">
+            <h3>Paso 1: Información del Alumno</h3>
+            <input type="text" id="reg_nombre" placeholder="Nombre completo">
+            <input type="text" id="reg_especialidad" placeholder="Especialidad">
+            <input type="text" id="reg_grupo" placeholder="Grupo">
+            <button onclick="registrarAlumno()" style="width:100%">SIGUIENTE: AGREGAR PRODUCTOS</button>
+        </div>
+
+        <div id="paso2" style="display:none">
+            <div class="info-box">
+                <p>Registrando para: <b id="nom_actual"></b></p>
+                <p>Productos cargados: <b id="cont_prod">0</b> / 10</p>
+            </div>
+            <select id="prod_cat">
+                <option value="Utiles">Útiles Escolares (1-3 pts)</option>
+                <option value="Juegos">Juegos de mesa (3-5 pts)</option>
+                <option value="Ropa">Ropa (5-8 pts)</option>
+                <option value="Electronicos">Electrónicos (5-10 pts)</option>
+                <option value="Otros">Otros (1-10 pts)</option>
+            </select>
+            <input type="text" id="prod_desc" placeholder="Descripción del producto">
+            <input type="number" id="prod_pts" placeholder="Puntos">
+            <button id="btn_add_prod" onclick="agregarProducto()" style="background:var(--azul); width:100%">+ AGREGAR PRODUCTO</button>
+            <button onclick="location.reload()" style="background:#777; width:100%; margin-top:10px;">TERMINAR REGISTRO</button>
+        </div>
+    </div>
+
+    <div id="tienda" class="section">
+        <h3>🛒 Tienda de Canje</h3>
+        <p>1. Valida al comprador:</p>
+        <input type="text" id="bus_comprador" placeholder="Nombre o ID del alumno">
+        <button onclick="validarComprador()" style="width:100%; background:var(--naranja)">BUSCAR Y VALIDAR</button>
+        
+        <div id="box_comprador" style="display:none; margin-top:10px; padding:10px; background:#fff3e0; border-radius:5px;">
+            <p>Comprador: <b id="c_nom"></b> | Puntos: <b id="c_pts"></b></p>
+        </div>
+
+        <table id="tabla_tienda">
+            <thead><tr><th>Producto</th><th>Costo</th><th>Acción</th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div id="admin" class="section">
+        <h3>Acceso Administrativo</h3>
+        <input type="password" id="adm_pass" placeholder="Contraseña">
+        <button onclick="cargarAdmin()" style="width:100%">VER REPORTE TOTAL</button>
+        <div id="reporte_admin" style="margin-top:20px"></div>
+    </div>
+</div>
+
+<script>
+    let currentId = null;
+    let currentPts = 0;
+    let prodCount = 0;
+    const RANGOS = { Utiles:[1,3], Juegos:[3,5], Ropa:[5,8], Electronicos:[5,10], Otros:[1,10] };
+
+    function ver(id) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        if(id === 'inicio') cargarRanking();
+        if(id === 'tienda') { cargarInventario(); document.getElementById('box_comprador').style.display='none'; currentId=null; }
+    }
+
+    async function api(act, data = {}) {
+        const fd = new FormData();
+        fd.append('action', act);
+        for(let k in data) fd.append(k, data[k]);
+        const r = await fetch('api.php', { method: 'POST', body: fd });
+        return r.json();
+    }
+
+    // REGISTRO
+    async function registrarAlumno() {
+        const d = { nombre: document.getElementById('reg_nombre').value, especialidad: document.getElementById('reg_especialidad').value, grupo: document.getElementById('reg_grupo').value };
+        const r = await api('registrar_alumno', d);
+        if(r.success) {
+            alert("Alumno registrado. Ahora agrega sus productos.");
+            currentId = r.id;
+            document.getElementById('paso1').style.display = 'none';
+            document.getElementById('paso2').style.display = 'block';
+            document.getElementById('nom_actual').innerText = d.nombre;
+        } else { alert(r.error); }
+    }
+
+    async function agregarProducto() {
+        if(prodCount >= 10) return alert("Máximo 10 productos alcanzado.");
+        const cat = document.getElementById('prod_cat').value;
+        const pts = parseInt(document.getElementById('prod_pts').value);
+        const desc = document.getElementById('prod_desc').value;
+
+        if(pts < RANGOS[cat][0] || pts > RANGOS[cat][1]) return alert(`Puntos inválidos para ${cat}`);
+
+        const r = await api('registrar_producto', { alumno_id: currentId, categoria: cat, descripcion: desc, puntos: pts });
+        if(r.success) {
+            alert("¡Producto agregado!");
+            prodCount = r.nuevo_total;
+            document.getElementById('cont_prod').innerText = prodCount;
+            document.getElementById('prod_desc').value = '';
+            document.getElementById('prod_pts').value = '';
+            if(prodCount >= 10) document.getElementById('btn_add_prod').disabled = true;
+        } else { alert(r.error); }
+    }
+
+    // TIENDA
+    async function validarComprador() {
+        const r = await api('buscar_alumno', { termino: document.getElementById('bus_comprador').value });
+        if(r.error) return alert(r.error);
+        currentId = r.id;
+        currentPts = r.puntos_actuales;
+        document.getElementById('box_comprador').style.display = 'block';
+        document.getElementById('c_nom').innerText = r.nombre;
+        document.getElementById('c_pts').innerText = r.puntos_actuales + " pts";
+    }
+
+    async function cargarInventario() {
+        const d = await api('inventario');
+        document.querySelector('#tabla_tienda tbody').innerHTML = d.map(i => `
+            <tr><td>${i.descripcion}</td><td>${i.puntos_otorgados}</td>
+            <td><button onclick="canjear(${i.id}, ${i.puntos_otorgados}, '${i.descripcion}')">Canjear</button></td></tr>
+        `).join('');
+    }
+
+    async function canjear(pid, pts, desc) {
+        if(!currentId) return alert("Primero valida al alumno comprador.");
+        if(currentPts < pts) return alert("Saldo insuficiente.");
+        const r = await api('realizar_canje', { alumno_id: currentId, producto_id: pid, costo: pts, descripcion: desc });
+        alert(r.success);
+        ver('tienda');
+    }
+
+    // ADMIN
+    async function cargarAdmin() {
+        const r = await api('admin_full', { password: document.getElementById('adm_pass').value });
+        if(r.error) return alert(r.error);
+        document.getElementById('reporte_admin').innerHTML = r.map(a => `
+            <div class="admin-card">
+                <b>${a.nombre}</b> (${a.especialidad} - ${a.grupo})<br>
+                <small>Saldo: ${a.puntos_actuales} | Total Ganado: ${a.puntos_totales_ganados}</small>
+                <div style="font-size:0.8rem; color:#666; margin-top:5px;">
+                    Aportes: ${a.aportes.map(x=>x.descripcion).join(', ') || 'Ninguno'}<br>
+                    Canjes: ${a.canjes.map(x=>x.producto_llevado).join(', ') || 'Ninguno'}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async function cargarRanking() {
+        const d = await api('ranking');
+        document.querySelector('#tabla_ranking tbody').innerHTML = d.map(a => `<tr><td>${a.nombre}</td><td>${a.puntos_totales_ganados}</td></tr>`).join('');
+    }
+</script>
+</body>
+</html>
